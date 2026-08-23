@@ -138,54 +138,40 @@ function switchTab() {
 
     const currentTab = getCurrentTab();
 
+    const sections = [
+        "sec_mix",
+        "sec_mv",
+        "sec_movie",
+        "sec_thumb",
+        "sec_illust"
+    ];
 
-    // --------------------------------------------------------
-    // 全セクションを非表示
-    // --------------------------------------------------------
 
-    Object.values(TAB_INFO).forEach(info => {
+    // 全部非表示
+    sections.forEach(id => {
 
-        const section =
-            document.getElementById(info.sectionId);
+        const section = document.getElementById(id);
 
         if (section) {
-
             section.style.display = "none";
-
         }
 
     });
 
 
-    // --------------------------------------------------------
-    // 選択中のセクションのみ表示
-    // --------------------------------------------------------
+    // 現在のタブだけ表示
+    const currentSection = document.getElementById(
+        `sec_${currentTab}`
+    );
 
-    const currentInfo =
-        TAB_INFO[currentTab];
-
-    if (currentInfo) {
-
-        const target =
-            document.getElementById(
-                currentInfo.sectionId
-            );
-
-        if (target) {
-
-            target.style.display = "block";
-
-        }
-
+    if (currentSection) {
+        currentSection.style.display = "block";
     }
 
 
-    // --------------------------------------------------------
-    // タブ変更と同時に金額も切り替え
-    // --------------------------------------------------------
-
+    // ★ タブを切り替えた瞬間に
+    // そのタブだけの見積もりへ変更
     calcTotal();
-
 }
 
 
@@ -273,160 +259,80 @@ function applyDiscount(price) {
 
 function updatePriceTags() {
 
-    const rate =
-        getDiscountRate();
+    const rate = getDiscountRate();
 
+    document.querySelectorAll(".price-tag").forEach(tag => {
 
-    const priceTags =
-        document.querySelectorAll(
-            ".price-tag"
-        );
-
-
-    priceTags.forEach(tag => {
-
-
-        // ----------------------------------------------------
-        // イラスト料金は変更しない
-        // ----------------------------------------------------
-
-        if (
-            tag.closest(
-                ".illust-sub-form"
-            )
-        ) {
-
+        // イラストは割引対象外
+        if (tag.closest(".illust-sub-form")) {
             return;
-
         }
 
 
-        // ----------------------------------------------------
-        // 最初の通常価格を保存
-        // ----------------------------------------------------
+        // 最初の1回だけ元価格を保存
+        if (!tag.dataset.originalPrice) {
 
-        if (
-            !tag.dataset.originalPrice
-        ) {
-
-            const text =
-                tag.textContent.trim();
-
-
-            const match =
-                text.match(
-                    /[+＋]?\s*[\d,]+/
-                );
-
+            const match = tag.textContent.match(/[+＋]?\s*[\d,]+/);
 
             if (!match) {
-
                 return;
-
             }
 
-
-            const originalText =
-                match[0]
-                    .replace(/,/g, "")
-                    .replace(/＋/g, "+")
-                    .replace(/\s/g, "");
-
-
-            tag.dataset.originalPrice =
-                originalText;
-
+            tag.dataset.originalPrice = match[0]
+                .replace(/,/g, "")
+                .replace(/＋/g, "+")
+                .replace(/\s/g, "");
         }
 
 
-        // ----------------------------------------------------
-        // 通常価格取得
-        // ----------------------------------------------------
+        const originalText = tag.dataset.originalPrice;
 
-        const originalText =
-            tag.dataset.originalPrice;
+        const hasPlus = originalText.startsWith("+");
 
+        const originalPrice = parseInt(
+            originalText.replace("+", ""),
+            10
+        );
 
-        const hasPlus =
-            originalText.startsWith("+");
-
-
-        const originalPrice =
-            parseInt(
-                originalText.replace(
-                    "+",
-                    ""
-                ),
-                10
-            );
-
-
-        if (
-            Number.isNaN(
-                originalPrice
-            )
-        ) {
-
+        if (Number.isNaN(originalPrice)) {
             return;
-
         }
 
 
-        const prefix =
-            hasPlus ? "+" : "";
+        const prefix = hasPlus ? "+" : "";
 
 
-        // ----------------------------------------------------
+        // ==========================================
         // 割引なし
-        // ----------------------------------------------------
+        // ==========================================
 
-        if (rate === 1) {
+        if (rate === 1 || originalPrice === 0) {
 
             tag.innerHTML =
                 `${prefix}${originalPrice.toLocaleString()}円`;
 
             return;
-
         }
 
 
-        // ----------------------------------------------------
+        // ==========================================
         // 割引あり
-        // ----------------------------------------------------
+        // ==========================================
 
-        const discountedPrice =
-            Math.floor(
-                originalPrice * rate
-            );
-
-
-        // 0円の場合
-        if (
-            originalPrice === 0
-        ) {
-
-            tag.innerHTML =
-                "0円";
-
-            return;
-
-        }
+        const discountedPrice = Math.floor(
+            originalPrice * rate
+        );
 
 
         tag.innerHTML = `
             <span class="price-original">
                 ${prefix}${originalPrice.toLocaleString()}円
             </span>
-            <span class="price-arrow">
-                →
-            </span>
             <span class="price-discounted">
                 ${prefix}${discountedPrice.toLocaleString()}円
             </span>
         `;
-
     });
-
 }
 
 
