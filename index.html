@@ -205,15 +205,19 @@
             <label><input type="radio" name="mix_base" value="2000" data-label="フルコーラス"> フルコーラス <span class="price-tag">2000円</span></label>
         </div>
         <div class="field">
+            <strong>ハモリ</strong><br>
+            <label><input type="radio" name="mix_harm" value="0" data-label="ハモリ不要 or ハモリ録音済み" checked> ハモリ不要 or ハモリ録音済み <span class="price-tag">0円</span></label><br>
+            <label><input type="radio" name="mix_harm" value="1000" data-label="ハモリのMIDIデータ or wavデータ提供"> ハモリのMIDIデータ or wavデータ提供 <span class="price-tag">+1000円</span> <span class="desc" style="display:inline;">（音源データを送りますので録音して送信してください！）</span></label><br>
+            <label><input type="radio" name="mix_harm" value="3000" data-label="ハモリを生成"> ハモリを生成 <span class="price-tag">+3000円</span></label>
+        </div>
+        <div class="field">
             <strong>オプション</strong><br>
+            <label><input type="checkbox" class="mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
+            <label><input type="checkbox" class="mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
             <label><input type="checkbox" id="opt_mix_encode" value="1000" data-label="エンコード"> エンコード <span class="price-tag">+1000円</span> <span class="desc" style="display:inline;">（MVとの同時依頼時は無料）</span></label><br>
             <label><input type="checkbox" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
             <label><input type="checkbox" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span> <span class="desc" style="display:inline;">（3日以内）</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="3000" data-label="ハモリ生成"> ハモリ生成 <span class="price-tag">+3000円</span> <span class="desc" style="display:inline;">（ハモリを録音していただければ料金かかりません）</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="2000" data-label="ハモリデータ提供"> ハモリMIDIデータor wavデータ提供 <span class="price-tag">+2000円</span> <span class="desc" style="display:inline;">（音源データを送りますので録音して送信してください！）</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label>
+            <label><input type="checkbox" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span> <span class="desc" style="display:inline;">（3日以内）</span></label>
         </div>
     </div>
 
@@ -453,6 +457,17 @@ function calcTotal() {
         mixPrice += parseInt(mixBase.value) * users;
         textBody += `■ MIX予算\n・基本料金: ${mixBase.dataset.label} (x${users}人)\n`;
         
+        let mixHarm = document.querySelector('input[name="mix_harm"]:checked');
+        if (mixHarm) {
+            let harmVal = parseInt(mixHarm.value);
+            if (harmVal > 0) {
+                mixPrice += harmVal;
+                textBody += `・ハモリ: ${mixHarm.dataset.label} (+${harmVal}円)\n`;
+            } else {
+                textBody += `・ハモリ: ${mixHarm.dataset.label}\n`;
+            }
+        }
+
         document.querySelectorAll('.mix-opt:checked').forEach(opt => {
             mixPrice += parseInt(opt.value);
             textBody += `・オプション: ${opt.dataset.label}\n`;
