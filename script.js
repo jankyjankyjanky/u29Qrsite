@@ -169,8 +169,31 @@ function switchTab() {
     }
 
 
-    // ★ タブを切り替えた瞬間に
-    // そのタブだけの見積もりへ変更
+    // ==========================================
+    // 下部の「○○のお見積り金額」を変更
+    // ==========================================
+
+    const titles = {
+        mix: "MIX",
+        mv: "MV",
+        movie: "動画",
+        thumb: "サムネイル",
+        illust: "イラスト"
+    };
+
+    const totalTitle = document.getElementById(
+        "total-title"
+    );
+
+    if (totalTitle) {
+
+        totalTitle.textContent =
+            `${titles[currentTab]}のお見積り金額:`;
+
+    }
+
+
+    // 現在のタブだけ再計算
     calcTotal();
 }
 
