@@ -71,6 +71,7 @@
             margin-bottom: 20px;
             box-shadow: 0 2px 5px rgba(0,0,0,0.05);
             border: 1px solid #E0E0E0;
+            display: none; /* 初期状態では非表示（JSで制御） */
         }
         .section h2 {
             border-bottom: 2px solid #FFCA28;
@@ -162,22 +163,20 @@
 </header>
 
 <div class="menu-bar">
-    <input type="radio" name="main_tab" id="tab_all" value="all" class="tab-radio" checked>
-    <label for="tab_all" class="tab-label">セット予算 (一括表示)</label>
-
-    <input type="radio" name="main_tab" id="tab_mix" value="mix" class="tab-radio">
+    <!-- セット予算は一旦除外しています -->
+    <input type="radio" name="main_tab" id="tab_mix" value="mix" class="tab-radio" checked onchange="switchTab()">
     <label for="tab_mix" class="tab-label">MIX予算</label>
 
-    <input type="radio" name="main_tab" id="tab_mv" value="mv" class="tab-radio">
+    <input type="radio" name="main_tab" id="tab_mv" value="mv" class="tab-radio" onchange="switchTab()">
     <label for="tab_mv" class="tab-label">MV予算</label>
 
-    <input type="radio" name="main_tab" id="tab_movie" value="movie" class="tab-radio">
+    <input type="radio" name="main_tab" id="tab_movie" value="movie" class="tab-radio" onchange="switchTab()">
     <label for="tab_movie" class="tab-label">動画予算</label>
 
-    <input type="radio" name="main_tab" id="tab_thumb" value="thumb" class="tab-radio">
+    <input type="radio" name="main_tab" id="tab_thumb" value="thumb" class="tab-radio" onchange="switchTab()">
     <label for="tab_thumb" class="tab-label">サムネイル予算</label>
 
-    <input type="radio" name="main_tab" id="tab_illust" value="illust" class="tab-radio">
+    <input type="radio" name="main_tab" id="tab_illust" value="illust" class="tab-radio" onchange="switchTab()">
     <label for="tab_illust" class="tab-label">イラスト予算</label>
 </div>
 
@@ -358,19 +357,27 @@ window.onload = () => {
     document.addEventListener('change', calcTotal);
     document.addEventListener('input', calcTotal);
     
-    // 初期タブの切り替え
+    // 初期タブの切り替えを実行
     switchTab();
 };
 
 // --- タブ切り替え処理 ---
 function switchTab() {
-    let tab = document.querySelector('input[name="main_tab"]:checked').value;
+    let tabRadio = document.querySelector('input[name="main_tab"]:checked');
+    if (!tabRadio) return;
+    
+    let selectedTab = tabRadio.value;
     let sections = ['sec_mix', 'sec_mv', 'sec_movie', 'sec_thumb', 'sec_illust'];
-    if (tab === 'all') {
-        sections.forEach(id => document.getElementById(id).style.display = 'block');
-    } else {
-        sections.forEach(id => document.getElementById(id).style.display = 'none');
-        document.getElementById('sec_' + tab).style.display = 'block';
+    
+    // すべて非表示にしてから選択されたタブのみ表示
+    sections.forEach(id => {
+        let el = document.getElementById(id);
+        if (el) el.style.display = 'none';
+    });
+
+    let targetEl = document.getElementById('sec_' + selectedTab);
+    if (targetEl) {
+        targetEl.style.display = 'block';
     }
 }
 
@@ -513,7 +520,6 @@ function calcTotal() {
     // 5. イラスト（計算用ヘルパー関数）
     const calcIll = (prefix, title) => {
         let wrap = document.getElementById(`wrap_illust_${prefix}`);
-        // 非表示なら無視（MV等のチェックが外れている場合）
         if(!wrap || wrap.style.display === 'none') return 0;
         
         let eshi = document.querySelector(`input[name="eshi_${prefix}"]:checked`);
@@ -537,10 +543,6 @@ function calcTotal() {
         return 0;
     };
 
-    // メインのイラストは常に計算（未選択なら0が返る）
-    // ※ただし、セット予算以外の個別タブで表示されていない場合は除外するロジックにしたい場合は調整可能ですが、
-    // 今回は「入力されたものは裏で保持・合算される（カート形式）」としています。
-    document.getElementById('wrap_illust_main').style.display = 'block'; 
     totalIllust += calcIll('main', 'イラスト単体');
     if(document.getElementById('chk_illust_mv').checked) totalIllust += calcIll('mv', 'イラスト追加(MV)');
     if(document.getElementById('chk_illust_movie').checked) totalIllust += calcIll('movie', 'イラスト追加(動画)');
