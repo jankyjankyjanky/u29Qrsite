@@ -88,7 +88,24 @@
             color: #D32F2F;
             font-size: 0.9em;
             margin-left: 5px;
+            white-space: nowrap;
         }
+        
+        /* 割引前の通常価格 */
+        .price-original {
+            color: #9E9E9E;
+            text-decoration: line-through;
+            text-decoration-thickness: 1px;
+            font-weight: normal;
+            margin-right: 6px;
+        }
+        
+        /* 割引後の価格 */
+        .price-discounted {
+            color: #D32F2F;
+            font-weight: bold;
+        }
+
         input[type="number"] {
             padding: 5px;
             border: 1px solid #ccc;
