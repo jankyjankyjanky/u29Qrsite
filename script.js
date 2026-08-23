@@ -1386,169 +1386,63 @@ function calculateIllust() {
 
 function calcTotal() {
 
-    const currentTab =
-        getCurrentTab();
+    const currentTab = getCurrentTab();
 
+    const rate = getDiscountRate();
 
-    const rate =
-        getDiscountRate();
-
-
-    // 料金表も更新
     updatePriceTags();
 
-
     let result = {
-
         discountable: 0,
-
         illust: 0,
-
         lines: []
-
     };
 
 
-    // --------------------------------------------------------
-    // MIX
-    // --------------------------------------------------------
+    switch (currentTab) {
 
-    if (
-        currentTab === "mix"
-    ) {
+        case "mix":
+            result = calculateMix();
+            break;
 
-        result =
-            calculateMix();
+        case "mv":
+            result = calculateMv();
+            break;
 
+        case "movie":
+            result = calculateMovie();
+            break;
+
+        case "thumb":
+            result = calculateThumb();
+            break;
+
+        case "illust":
+            result = calculateIllust();
+            break;
     }
 
 
-    // --------------------------------------------------------
-    // MV
-    // --------------------------------------------------------
-
-    else if (
-        currentTab === "mv"
-    ) {
-
-        result =
-            calculateMv();
-
-    }
-
-
-    // --------------------------------------------------------
-    // 動画
-    // --------------------------------------------------------
-
-    else if (
-        currentTab === "movie"
-    ) {
-
-        result =
-            calculateMovie();
-
-    }
-
-
-    // --------------------------------------------------------
-    // サムネイル
-    // --------------------------------------------------------
-
-    else if (
-        currentTab === "thumb"
-    ) {
-
-        result =
-            calculateThumb();
-
-    }
-
-
-    // --------------------------------------------------------
-    // イラスト
-    // --------------------------------------------------------
-
-    else if (
-        currentTab === "illust"
-    ) {
-
-        result =
-            calculateIllust();
-
-    }
-
-
-    // --------------------------------------------------------
-    // 最終金額
-    //
-    // 通常サービス
-    // ↓
-    // 割引
-    //
-    // イラスト
-    // ↓
-    // 割引なし
-    // --------------------------------------------------------
-
-    const discountedPrice =
-        Math.floor(
-            result.discountable *
-            rate
-        );
-
+    // イラスト以外だけ割引
+    const discountedPrice = Math.floor(
+        result.discountable * rate
+    );
 
     const finalTotal =
-        discountedPrice +
-        result.illust;
+        discountedPrice + result.illust;
 
 
-    // --------------------------------------------------------
-    // 下部表示
-    // --------------------------------------------------------
+    document.getElementById(
+        "display_price"
+    ).textContent =
+        `${finalTotal.toLocaleString()} 円`;
 
-    const displayPrice =
-        document.getElementById(
-            "display_price"
-        );
-
-
-    if (displayPrice) {
-
-        displayPrice.textContent =
-            `${finalTotal.toLocaleString()} 円`;
-
-    }
-
-
-    // total-titleがある場合のみ更新
-    const totalTitle =
-        document.getElementById(
-            "total-title"
-        );
-
-
-    if (
-        totalTitle &&
-        TAB_INFO[currentTab]
-    ) {
-
-        totalTitle.textContent =
-            `${TAB_INFO[currentTab].title}のお見積り金額:`;
-
-    }
-
-
-    // --------------------------------------------------------
-    // メール内容更新
-    // --------------------------------------------------------
 
     updateSubmitButton(
         currentTab,
         finalTotal,
         result.lines
     );
-
 }
 
 
