@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v4
+// script.js v5
 // ============================================================
 
 const TAB_INFO = {
@@ -561,7 +561,6 @@ function calculateSet() {
         return {
             finalTotal: 0,
             beforeSetDiscount: 0,
-            rawSubtotal: 0,
             lines: [],
             planLabel: "",
             minimum: 0,
@@ -572,25 +571,25 @@ function calculateSet() {
 
     const info = SET_INFO[planKey];
 
-    let rawDiscountable = 0;
+    let discountable = 0;
     let illust = 0;
     const lines = [];
 
     if (info.components.includes("mix")) {
         const result = calculateMix(true);
-        rawDiscountable += result.discountable;
+        discountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("mv")) {
         const result = calculateMv(true, false);
-        rawDiscountable += result.discountable;
+        discountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("movie")) {
         const result = calculateMovie(true, false);
-        rawDiscountable += result.discountable;
+        discountable += result.discountable;
         lines.push(...result.lines);
     }
 
@@ -605,20 +604,18 @@ function calculateSet() {
         }
     }
 
-    // 最低注文額は「各種割引をかける前」の注文金額で判定する。
-    // そのため学割・初回割引をONにしても最低注文額の基準自体は変わらない。
-    const rawSubtotal = rawDiscountable + illust;
-    const meetsMinimum = rawSubtotal >= info.minimum;
-
     // 学割・初回割引は通常サービス部分だけに適用。
     // イラストは従来どおり割引対象外。
     const rate = getDiscountRate();
-    const discountedService = Math.floor(rawDiscountable * rate);
+    const discountedService = Math.floor(discountable * rate);
 
-    // セット割引を引く直前の表示金額
+    // 最低注文額は「学割・初回割引適用後、セット割引適用前」の金額で判定する。
+    // 最低注文額そのもの（例: 2,000円）は割引によって変化しない。
     const beforeSetDiscount = discountedService + illust;
+    const meetsMinimum = beforeSetDiscount >= info.minimum;
 
-    // 最低注文額を満たしている場合だけ固定額のセット割引を適用
+    // 最低注文額を満たしている場合だけ、固定額のセット割引を適用。
+    // セット割引額そのものも学割・初回割引で変化しない。
     const finalTotal = meetsMinimum
         ? Math.max(0, beforeSetDiscount - info.discount)
         : beforeSetDiscount;
@@ -626,7 +623,6 @@ function calculateSet() {
     return {
         finalTotal,
         beforeSetDiscount,
-        rawSubtotal,
         lines,
         planLabel: info.label,
         minimum: info.minimum,
@@ -663,7 +659,7 @@ function calcTotal() {
 
             if (!setResult.meetsMinimum) {
                 extraMailLines.push(
-                    `・現在の割引前注文額: ${setResult.rawSubtotal.toLocaleString()}円（最低注文額未満）`
+                    `・学割・初回割引適用後の注文額: ${setResult.beforeSetDiscount.toLocaleString()}円（最低注文額未満）`
                 );
             }
         }
