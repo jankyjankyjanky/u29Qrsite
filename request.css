@@ -268,3 +268,30 @@
     margin-top: 0;
     margin-bottom: 18px;
 }
+
+
+/* 依頼内容の必須チェック */
+.estimate-required-message {
+    background: #FFEBEE;
+    color: #B71C1C;
+    border-left: 5px solid #D32F2F;
+    border-radius: 8px;
+    padding: 12px 14px;
+    margin-top: 18px;
+    line-height: 1.5;
+}
+
+.estimate-required-message strong {
+    display: block;
+    margin-bottom: 5px;
+}
+
+.estimate-required-message ul {
+    margin: 5px 0 0;
+    padding-left: 1.4em;
+}
+
+.estimate-field-error {
+    border-left: 4px solid #D32F2F;
+    padding-left: 10px;
+}

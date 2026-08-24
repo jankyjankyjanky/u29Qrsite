@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr ご依頼フォーム
-// request.js v3
+// request.js v4
 // ============================================================
 
 const ESTIMATE_STORAGE_KEY = "u29qr_current_estimate";
@@ -89,12 +89,14 @@ function restoreEstimateIntoEditor(estimate) {
 function setupEditorSync() {
     document.addEventListener("change", event => {
         if (event.target.closest(".request-section")) {
+            clearEstimateValidationErrors();
             saveCurrentEstimate();
         }
     });
 
     document.addEventListener("input", event => {
         if (event.target.closest(".request-section")) {
+            clearEstimateValidationErrors();
             saveCurrentEstimate();
         }
     });
@@ -110,6 +112,183 @@ function saveCurrentEstimate() {
         JSON.stringify(estimate)
     );
 }
+
+
+// ============================================================
+// 依頼内容の必須チェック
+// 「オプション」は未選択でもOK
+// ============================================================
+
+function clearEstimateValidationErrors() {
+    document.querySelectorAll(".estimate-field-error").forEach(element => {
+        element.classList.remove("estimate-field-error");
+    });
+
+    const message = document.getElementById("estimate_required_error");
+
+    if (message) {
+        message.hidden = true;
+        message.innerHTML = "";
+    }
+}
+
+function markEstimateError(element) {
+    const field = element?.closest(".field") || element?.closest(".illust-sub-form");
+
+    if (field) {
+        field.classList.add("estimate-field-error");
+    }
+}
+
+function validateRequiredEstimate() {
+    clearEstimateValidationErrors();
+
+    const missing = [];
+    let firstElement = null;
+
+    const addMissing = (label, element) => {
+        missing.push(label);
+        markEstimateError(element);
+
+        if (!firstElement && element) {
+            firstElement = element;
+        }
+    };
+
+    const requireRadio = (name, label) => {
+        const checked = document.querySelector(`input[name="${name}"]:checked`);
+
+        if (!checked) {
+            addMissing(label, document.querySelector(`input[name="${name}"]`));
+            return false;
+        }
+
+        return true;
+    };
+
+    const requireNumber = (id, label, minimum = null) => {
+        const element = document.getElementById(id);
+
+        if (!element) return true;
+
+        const raw = element.value.trim();
+        const value = Number(raw);
+
+        const invalid =
+            raw === "" ||
+            Number.isNaN(value) ||
+            (minimum !== null && value < minimum);
+
+        if (invalid) {
+            addMissing(label, element);
+            return false;
+        }
+
+        return true;
+    };
+
+    const requireIllustration = (prefix, labelPrefix = "イラスト") => {
+        const artistOk = requireRadio(`eshi_${prefix}`, `${labelPrefix}：絵師`);
+
+        if (!artistOk) {
+            return;
+        }
+
+        const selectedArtist =
+            document.querySelector(`input[name="eshi_${prefix}"]:checked`);
+
+        // 現状は絵師2の詳細選択を使用
+        if (selectedArtist?.value === "2") {
+            const styleOk =
+                requireRadio(`style_${prefix}`, `${labelPrefix}：絵柄`);
+
+            if (styleOk) {
+                requireRadio(`range_${prefix}`, `${labelPrefix}：立ち絵範囲`);
+            }
+        }
+    };
+
+    const currentTab = getCurrentTab();
+
+    if (currentTab === "mix") {
+        requireNumber("mix_users", "MIX：人数", 1);
+        requireRadio("mix_base", "MIX：基本料金");
+        requireRadio("mix_harm", "MIX：ハモリ");
+    }
+
+    if (currentTab === "mv") {
+        requireRadio("mv_length", "MV：動画尺");
+        requireRadio("mv_config", "MV：MV構成");
+    }
+
+    if (currentTab === "movie") {
+        requireNumber("movie_min", "動画編集：動画尺", 0);
+        requireNumber("movie_mat", "動画編集：動画の素材数", 1);
+        requireRadio("movie_cut", "動画編集：動画のカット");
+    }
+
+    if (currentTab === "illust") {
+        requireIllustration("main", "イラスト");
+    }
+
+    if (currentTab === "set") {
+        const planSelected = requireRadio("set_plan", "セット：セット種類");
+
+        if (planSelected) {
+            const planKey =
+                document.querySelector('input[name="set_plan"]:checked')?.value;
+
+            const components = SET_INFO[planKey]?.components || [];
+
+            if (components.includes("mix")) {
+                requireNumber("set_mix_users", "セット内MIX：人数", 1);
+                requireRadio("set_mix_base", "セット内MIX：基本料金");
+                requireRadio("set_mix_harm", "セット内MIX：ハモリ");
+            }
+
+            if (components.includes("mv")) {
+                requireRadio("set_mv_length", "セット内MV：動画尺");
+                requireRadio("set_mv_config", "セット内MV：MV構成");
+            }
+
+            if (components.includes("movie")) {
+                requireNumber("set_movie_min", "セット内動画編集：動画尺", 0);
+                requireNumber("set_movie_mat", "セット内動画編集：動画の素材数", 1);
+                requireRadio("set_movie_cut", "セット内動画編集：動画のカット");
+            }
+
+            if (components.includes("illust")) {
+                requireIllustration("set", "セット内イラスト");
+            }
+        }
+    }
+
+    if (missing.length === 0) {
+        return true;
+    }
+
+    const message = document.getElementById("estimate_required_error");
+
+    if (message) {
+        message.hidden = false;
+        message.innerHTML =
+            `<strong>未選択の必須項目があります。</strong>` +
+            `<ul>${missing.map(item => `<li>${escapeHtml(item)}</li>`).join("")}</ul>`;
+
+        message.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    } else if (firstElement) {
+        firstElement.scrollIntoView({
+            behavior: "smooth",
+            block: "center"
+        });
+    }
+
+    return false;
+}
+
 
 function setupContactMethod() {
     const select = document.getElementById("contact_method");
@@ -155,6 +334,10 @@ function setupForm() {
 
     form.addEventListener("submit", event => {
         event.preventDefault();
+
+        if (!validateRequiredEstimate()) {
+            return;
+        }
 
         if (!form.reportValidity()) {
             return;

@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>u29Qr(うにくる) ご依頼フォーム</title>
-    <link rel="stylesheet" href="style.css?v=8">
-    <link rel="stylesheet" href="request.css?v=3">
+    <link rel="stylesheet" href="style.css?v=9">
+    <link rel="stylesheet" href="request.css?v=4">
 </head>
 <body class="request-page">
 
@@ -57,13 +57,13 @@
             <h2>歌ってみたMIX</h2>
 
             <div class="field">
-                <label><strong>人数</strong></label>
-                <input type="number" id="mix_users" value="1" min="1"> 人
+                <label><strong>人数</strong> <span class="required">必須</span></label>
+                <input type="number" id="mix_users" value="1" min="1" required> 人
                 <span class="desc">（コラボ時は基本料金×人数となります）</span>
             </div>
 
             <div class="field">
-                <strong>基本料金</strong>
+                <strong>基本料金</strong> <span class="required">必須</span>
                 <span class="desc">（軽めのピッチ、リズム補正・ノイズ、ブレス除去・リバーブ等の最低限のエフェクト・マスタリング）</span>
                 <label><input type="radio" name="mix_base" value="500" data-label="サビのみ"> サビのみ <span class="price-tag">500円</span></label><br>
                 <label><input type="radio" name="mix_base" value="1000" data-label="ワンコーラス"> ワンコーラス <span class="price-tag">1000円</span></label><br>
@@ -71,7 +71,7 @@
             </div>
 
             <div class="field">
-                <strong>ハモリ</strong><br>
+                <strong>ハモリ</strong> <span class="required">必須</span><br>
                 <label><input type="radio" name="mix_harm" value="0" data-label="ハモリ不要 or ハモリ録音済み" checked> ハモリ不要 or ハモリ録音済み <span class="price-tag">0円</span></label><br>
                 <label><input type="radio" name="mix_harm" value="1000" data-label="ハモリのMIDIデータ or wavデータ提供"> ハモリのMIDIデータ or wavデータ提供 <span class="price-tag">+1000円</span></label><br>
                 <label><input type="radio" name="mix_harm" value="3000" data-label="ハモリを生成"> ハモリを生成 <span class="price-tag">+3000円</span></label>
@@ -93,14 +93,14 @@
             <h2>歌ってみた用MV制作 (shorts含む)</h2>
 
             <div class="field">
-                <strong>動画尺</strong>
+                <strong>動画尺</strong> <span class="required">必須</span>
                 <label><input type="radio" name="mv_length" value="1000" data-label="サビのみ"> サビのみ <span class="price-tag">1000円</span></label><br>
                 <label><input type="radio" name="mv_length" value="2000" data-label="１番のみ"> １番のみ <span class="price-tag">2000円</span></label><br>
                 <label><input type="radio" name="mv_length" value="4000" data-label="曲フル"> 曲フル <span class="price-tag">4000円</span></label>
             </div>
 
             <div class="field">
-                <strong>MV構成</strong>
+                <strong>MV構成</strong> <span class="required">必須</span>
                 <label><input type="radio" id="mv_config_auto" name="mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
                 <label><input type="radio" id="mv_config_client" name="mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
                 <label><input type="radio" id="mv_config_original" name="mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
@@ -118,18 +118,18 @@
             <h2>動画編集・動画作成 (shorts含む)</h2>
 
             <div class="field">
-                <strong>動画尺予想</strong>
+                <strong>動画尺予想</strong> <span class="required">必須</span>
                 <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分）</span>
-                <input type="number" id="movie_min" min="0" placeholder="分"> 分
+                <input type="number" id="movie_min" min="0" placeholder="分" required> 分
             </div>
 
             <div class="field">
-                <strong>素材数</strong>
-                <input type="number" id="movie_mat" min="1" value="1">
+                <strong>動画の素材数</strong> <span class="required">必須</span>
+                <input type="number" id="movie_mat" min="1" value="1" required>
             </div>
 
             <div class="field">
-                <strong>動画のカットについて</strong><br>
+                <strong>動画のカットについて</strong> <span class="required">必須</span><br>
                 <label><input type="radio" name="movie_cut" value="0" data-label="すでにカット済み"> すでにカット済み <span class="price-tag">0円</span></label><br>
                 <label><input type="radio" name="movie_cut" value="1000" data-label="秒数指定あり"> 秒数指定あり <span class="price-tag">1000円</span></label><br>
                 <label><input type="radio" name="movie_cut" value="5000" data-label="おまかせ"> おまかせで面白く動画を作って欲しい <span class="price-tag">5000円</span></label>
@@ -152,7 +152,7 @@
             <h2>セットでの依頼</h2>
 
             <div class="field set-choice">
-                <strong>セットを選択</strong>
+                <strong>セットを選択</strong> <span class="required">必須</span>
                 <span class="desc">最低注文額は学割・初回割引を適用した後の金額で判定します。最低注文額とセット割引額そのものは変わりません。</span>
 
                 <label><input type="radio" name="set_plan" value="mix_mv" onchange="updateSetPanels()"> MIX + MVセット <span class="set-fixed-tag">最低注文額 2,000円 / -500円</span></label><br>
@@ -167,19 +167,19 @@
                 <h3>MIX</h3>
 
                 <div class="field">
-                    <label><strong>人数</strong></label>
-                    <input type="number" id="set_mix_users" value="1" min="1"> 人
+                    <label><strong>人数</strong> <span class="required">必須</span></label>
+                    <input type="number" id="set_mix_users" value="1" min="1" required> 人
                 </div>
 
                 <div class="field">
-                    <strong>基本料金</strong><br>
+                    <strong>基本料金</strong> <span class="required">必須</span><br>
                     <label><input type="radio" name="set_mix_base" value="500" data-label="サビのみ"> サビのみ <span class="price-tag">500円</span></label><br>
                     <label><input type="radio" name="set_mix_base" value="1000" data-label="ワンコーラス"> ワンコーラス <span class="price-tag">1000円</span></label><br>
                     <label><input type="radio" name="set_mix_base" value="2000" data-label="フルコーラス"> フルコーラス <span class="price-tag">2000円</span></label>
                 </div>
 
                 <div class="field">
-                    <strong>ハモリ</strong><br>
+                    <strong>ハモリ</strong> <span class="required">必須</span><br>
                     <label><input type="radio" name="set_mix_harm" value="0" data-label="ハモリ不要 or ハモリ録音済み" checked> ハモリ不要 or ハモリ録音済み <span class="price-tag">0円</span></label><br>
                     <label><input type="radio" name="set_mix_harm" value="1000" data-label="ハモリのMIDIデータ or wavデータ提供"> ハモリのMIDIデータ or wavデータ提供 <span class="price-tag">+1000円</span></label><br>
                     <label><input type="radio" name="set_mix_harm" value="3000" data-label="ハモリを生成"> ハモリを生成 <span class="price-tag">+3000円</span></label>
@@ -200,14 +200,14 @@
                 <h3>MV</h3>
 
                 <div class="field">
-                    <strong>動画尺</strong><br>
+                    <strong>動画尺</strong> <span class="required">必須</span><br>
                     <label><input type="radio" name="set_mv_length" value="1000" data-label="サビのみ"> サビのみ <span class="price-tag">1000円</span></label><br>
                     <label><input type="radio" name="set_mv_length" value="2000" data-label="１番のみ"> １番のみ <span class="price-tag">2000円</span></label><br>
                     <label><input type="radio" name="set_mv_length" value="4000" data-label="曲フル"> 曲フル <span class="price-tag">4000円</span></label>
                 </div>
 
                 <div class="field">
-                    <strong>MV構成</strong><br>
+                    <strong>MV構成</strong> <span class="required">必須</span><br>
                     <label><input type="radio" id="set_mv_config_auto" name="set_mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
                     <label><input type="radio" id="set_mv_config_client" name="set_mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
                     <label><input type="radio" id="set_mv_config_original" name="set_mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
@@ -224,17 +224,17 @@
                 <h3>動画編集・動画作成</h3>
 
                 <div class="field">
-                    <strong>動画尺予想</strong>
-                    <input type="number" id="set_movie_min" min="0" placeholder="分"> 分
+                    <strong>動画尺予想</strong> <span class="required">必須</span>
+                    <input type="number" id="set_movie_min" min="0" placeholder="分" required> 分
                 </div>
 
                 <div class="field">
-                    <strong>素材数</strong>
-                    <input type="number" id="set_movie_mat" min="1" value="1">
+                    <strong>動画の素材数</strong> <span class="required">必須</span>
+                    <input type="number" id="set_movie_mat" min="1" value="1" required>
                 </div>
 
                 <div class="field">
-                    <strong>動画のカットについて</strong><br>
+                    <strong>動画のカットについて</strong> <span class="required">必須</span><br>
                     <label><input type="radio" name="set_movie_cut" value="0" data-label="すでにカット済み"> すでにカット済み <span class="price-tag">0円</span></label><br>
                     <label><input type="radio" name="set_movie_cut" value="1000" data-label="秒数指定あり"> 秒数指定あり <span class="price-tag">1000円</span></label><br>
                     <label><input type="radio" name="set_movie_cut" value="5000" data-label="おまかせ"> おまかせで面白く動画を作って欲しい <span class="price-tag">5000円</span></label>
@@ -251,6 +251,9 @@
                 <div id="wrap_illust_set"></div>
             </div>
         </div>
+
+
+        <div id="estimate_required_error" class="estimate-required-message" hidden></div>
 
         <div class="request-estimate-bar">
             <div>
@@ -362,21 +365,21 @@
         </div>
 
         <div class="field">
-            <strong>絵師を選択</strong><br>
+            <strong>絵師を選択</strong> <span class="required">必須</span><br>
             <label><input type="radio" name="eshi_PREFIX" value="1" disabled> 絵師１ <span class="desc" style="display:inline;">（現在依頼停止中です）</span></label><br>
             <label><input type="radio" name="eshi_PREFIX" value="2" onchange="updateIllust('PREFIX')"> 絵師２</label>
         </div>
 
         <div id="eshi2_area_PREFIX" style="display:none;">
             <div class="field">
-                <strong>絵柄</strong><br>
+                <strong>絵柄</strong> <span class="required">必須</span><br>
                 <label><input type="radio" name="style_PREFIX" value="normal" data-label="通常" onchange="updateIllust('PREFIX')"> 通常</label>
                 <label><input type="radio" name="style_PREFIX" value="simple" data-label="簡易" onchange="updateIllust('PREFIX')"> 簡易</label>
                 <label><input type="radio" name="style_PREFIX" value="deform" data-label="デフォルメ" onchange="updateIllust('PREFIX')"> デフォルメ</label>
             </div>
 
             <div id="range_area_PREFIX" style="display:none;">
-                <strong>立ち絵範囲</strong><br>
+                <strong>立ち絵範囲</strong> <span class="required">必須</span><br>
                 <label id="lbl_face_PREFIX"><input type="radio" name="range_PREFIX" value="face" data-label="お顔のみ"> お顔のみ <span class="price-tag" id="price_face_PREFIX"></span><br></label>
                 <label id="lbl_chest_PREFIX"><input type="radio" name="range_PREFIX" value="chest" data-label="胸上"> 胸上 <span class="price-tag" id="price_chest_PREFIX"></span><br></label>
                 <label id="lbl_knee_PREFIX"><input type="radio" name="range_PREFIX" value="knee" data-label="膝上"> 膝上 <span class="price-tag" id="price_knee_PREFIX"></span><br></label>
@@ -386,7 +389,7 @@
     </div>
 </template>
 
-<script src="script.js?v=8"></script>
-<script src="request.js?v=3"></script>
+<script src="script.js?v=9"></script>
+<script src="request.js?v=4"></script>
 </body>
 </html>

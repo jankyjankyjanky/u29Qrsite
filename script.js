@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v8
+// script.js v9
 // ============================================================
 
 const TAB_INFO = {
@@ -477,7 +477,7 @@ function calculateMovie(isSet = false) {
 
     const materials = document.getElementById(matId)?.value;
     if (materials) {
-        lines.push(`・素材数: ${materials}`);
+        lines.push(`・動画の素材数: ${materials}`);
     }
 
     const cut = document.querySelector(`input[name="${cutName}"]:checked`);
