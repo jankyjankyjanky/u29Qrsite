@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>u29Qr(うにくる) ご依頼フォーム</title>
+    <link rel="stylesheet" href="style.css?v=6">
+    <link rel="stylesheet" href="request.css?v=1">
+</head>
+<body class="request-page">
+
+<header>
+    <h1>u29Qr (うにくる) ご依頼フォーム</h1>
+</header>
+
+<main class="request-container">
+    <a class="back-link" href="index.html">← 見積りを修正する</a>
+
+    <section class="request-card">
+        <div class="request-card-heading">
+            <div>
+                <span class="eyebrow">ESTIMATE</span>
+                <h2>お見積り内容</h2>
+            </div>
+            <div class="request-estimate-total">
+                <span>お見積り金額</span>
+                <strong id="request_total">―</strong>
+            </div>
+        </div>
+
+        <div id="estimate_error" class="request-alert error" hidden>
+            見積り情報が見つかりませんでした。見積りページへ戻り、内容を選択してから「依頼してみる！」を押してください。
+        </div>
+
+        <div id="estimate_content">
+            <dl class="estimate-meta">
+                <div>
+                    <dt>依頼区分</dt>
+                    <dd id="request_category">―</dd>
+                </div>
+                <div>
+                    <dt>割引</dt>
+                    <dd id="request_discount">―</dd>
+                </div>
+            </dl>
+
+            <div id="set_information" class="set-request-info" hidden></div>
+
+            <div class="request-detail-box">
+                <h3>選択内容</h3>
+                <ul id="request_lines"></ul>
+            </div>
+        </div>
+    </section>
+
+    <section class="request-card">
+        <div class="section-heading">
+            <span class="eyebrow">CONTACT</span>
+            <h2>依頼者情報</h2>
+            <p>制作について連絡できる情報を入力してください。</p>
+        </div>
+
+        <form id="request_form">
+            <div class="request-field">
+                <label for="activity_name">活動名 / お名前 <span class="required">必須</span></label>
+                <input type="text" id="activity_name" name="activity_name" autocomplete="name" required placeholder="例：うにくる">
+            </div>
+
+            <div class="request-field">
+                <label for="contact_method">希望する連絡方法 <span class="required">必須</span></label>
+                <select id="contact_method" name="contact_method" required>
+                    <option value="discord">Discord</option>
+                    <option value="x">X（Twitter）</option>
+                    <option value="email">メール</option>
+                    <option value="other">その他</option>
+                </select>
+            </div>
+
+            <div class="request-field">
+                <label for="contact_value">連絡先 <span class="required">必須</span></label>
+                <input type="text" id="contact_value" name="contact_value" required placeholder="Discordのユーザー名・XのIDなど">
+                <span class="form-help" id="contact_help">Discordのユーザー名を入力してください。</span>
+            </div>
+
+            <div class="request-grid">
+                <div class="request-field">
+                    <label for="deadline">希望納期</label>
+                    <input type="date" id="deadline" name="deadline">
+                </div>
+
+                <div class="request-field">
+                    <label for="public_date">公開予定日</label>
+                    <input type="date" id="public_date" name="public_date">
+                </div>
+            </div>
+
+            <div class="request-field">
+                <label for="materials_url">素材URL</label>
+                <input type="url" id="materials_url" name="materials_url" placeholder="Google DriveなどのURL">
+                <span class="form-help">まだ素材が揃っていない場合は空欄でも構いません。</span>
+            </div>
+
+            <div class="request-field">
+                <label for="reference_url">参考URL</label>
+                <input type="url" id="reference_url" name="reference_url" placeholder="参考動画・本家MVなど">
+            </div>
+
+            <div class="request-field">
+                <label for="notes">ご要望・補足</label>
+                <textarea id="notes" name="notes" rows="7" placeholder="制作のイメージ、注意事項、相談したいことなど"></textarea>
+            </div>
+
+            <label class="consent-row">
+                <input type="checkbox" id="agree" required>
+                <span>上記の見積り内容と入力内容を確認しました。</span>
+            </label>
+
+            <div class="backend-notice">
+                <strong>現在は依頼ページの準備段階です。</strong>
+                <span>次の段階で Firebase への保存と Discord Bot の通知を接続します。現時点では「送信」ボタンから外部へデータは送られません。</span>
+            </div>
+
+            <div class="request-actions">
+                <a class="secondary-button" href="index.html">見積りに戻る</a>
+                <button type="submit" class="primary-button" id="request_submit">入力内容を確認する</button>
+            </div>
+        </form>
+    </section>
+
+    <section id="request_preview" class="request-card preview-card" hidden>
+        <div class="section-heading">
+            <span class="eyebrow">PREVIEW</span>
+            <h2>送信内容の確認</h2>
+            <p>Firebase・Discord接続後、この内容が依頼データとして保存されます。</p>
+        </div>
+
+        <div id="preview_body"></div>
+
+        <div class="request-actions">
+            <button type="button" class="secondary-button button-reset" id="edit_request">入力内容を修正する</button>
+            <button type="button" class="primary-button" disabled>依頼を送信（接続準備中）</button>
+        </div>
+    </section>
+</main>
+
+<script src="request.js?v=1"></script>
+</body>
+</html>
