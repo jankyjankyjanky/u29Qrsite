@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v5
+// script.js v6
 // ============================================================
 
 const TAB_INFO = {
@@ -722,45 +722,40 @@ function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) 
         const isStudent = document.getElementById("chk_student")?.checked ?? false;
         const isFirst = document.getElementById("chk_first")?.checked ?? false;
 
-        let body = "【お見積り依頼内容】\n\n";
-        body += `■ ${info.mailTitle}\n`;
-
-        if (extraMailLines.length) {
-            body += extraMailLines.join("\n") + "\n";
-        }
-
-        if (lines.length) {
-            body += lines.join("\n") + "\n";
-        } else {
-            body += "・未選択\n";
-        }
-
-        body += "\n■ 割引\n";
-
-        if (isStudent && isFirst) {
-            body += "・学生料金 50%OFF\n";
-            body += "・初回利用者 20%OFF\n";
-            body += "・同時適用：合計60%OFF\n";
-        } else if (isStudent) {
-            body += "・学生料金 50%OFF\n";
-        } else if (isFirst) {
-            body += "・初回利用者 20%OFF\n";
-        } else {
-            body += "・なし\n";
-        }
+        const estimate = {
+            version: 1,
+            savedAt: new Date().toISOString(),
+            tab: currentTab,
+            title: info.title,
+            category: info.mailTitle,
+            finalTotal,
+            lines: [...extraMailLines, ...lines],
+            discount: {
+                student: isStudent,
+                first: isFirst,
+                rate: getDiscountRate()
+            }
+        };
 
         if (currentTab === "set") {
-            body += "・セットの最低注文額とセット割引額には上記割引を適用しません。\n";
+            const setResult = calculateSet();
+            const planKey = document.querySelector('input[name="set_plan"]:checked')?.value || "";
+
+            estimate.set = {
+                planKey,
+                planLabel: setResult.planLabel || "",
+                minimum: setResult.minimum || 0,
+                setDiscount: setResult.setDiscount || 0,
+                beforeSetDiscount: setResult.beforeSetDiscount || 0,
+                meetsMinimum: Boolean(setResult.meetsMinimum)
+            };
         }
 
-        body +=
-            `\n【お見積り合計金額】: ${finalTotal.toLocaleString()} 円\n\n` +
-            "よろしくお願いいたします。";
+        localStorage.setItem(
+            "u29qr_current_estimate",
+            JSON.stringify(estimate)
+        );
 
-        const subject = "お見積り・依頼のご相談";
-
-        window.location.href =
-            `mailto:?subject=${encodeURIComponent(subject)}` +
-            `&body=${encodeURIComponent(body)}`;
+        window.location.href = "request.html";
     };
 }
