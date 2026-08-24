@@ -1,18 +1,19 @@
 // ============================================================
 // u29Qr ご依頼フォーム
-// request.js
+// request.js v2
 // ============================================================
 
 const ESTIMATE_STORAGE_KEY = "u29qr_current_estimate";
 const REQUEST_DRAFT_KEY = "u29qr_request_draft";
 
 window.addEventListener("DOMContentLoaded", () => {
-    const estimate = loadEstimate();
+    const savedEstimate = loadEstimate();
 
-    renderEstimate(estimate);
+    restoreEstimateIntoEditor(savedEstimate);
     setupContactMethod();
     restoreDraft();
-    setupForm(estimate);
+    setupEditorSync();
+    setupForm();
 });
 
 function loadEstimate() {
@@ -25,79 +26,100 @@ function loadEstimate() {
     }
 }
 
-function renderEstimate(estimate) {
-    const errorBox = document.getElementById("estimate_error");
-    const content = document.getElementById("estimate_content");
-    const total = document.getElementById("request_total");
-
+function restoreEstimateIntoEditor(estimate) {
     if (!estimate) {
-        if (errorBox) errorBox.hidden = false;
-        if (content) content.hidden = true;
-        if (total) total.textContent = "―";
+        switchTab();
+        calcTotal();
         return;
     }
 
-    if (errorBox) errorBox.hidden = true;
-    if (content) content.hidden = false;
+    const tab = document.querySelector(
+        `input[name="main_tab"][value="${CSS.escape(estimate.tab || "mix")}"]`
+    );
 
-    document.getElementById("request_category").textContent =
-        estimate.category || estimate.title || "―";
+    if (tab) {
+        tab.checked = true;
+    }
 
-    document.getElementById("request_total").textContent =
-        `${Number(estimate.finalTotal || 0).toLocaleString()}円`;
+    // v7以降の見積りは、選択内容をそのまま復元
+    if (Array.isArray(estimate.formState)) {
+        restoreEstimatorState(estimate.formState);
+    } else {
+        // 旧バージョンから来た場合でも割引だけは引き継ぐ
+        if (estimate.discount) {
+            const student = document.getElementById("chk_student");
+            const first = document.getElementById("chk_first");
 
-    document.getElementById("request_discount").textContent =
-        getDiscountLabel(estimate.discount);
+            if (student) student.checked = Boolean(estimate.discount.student);
+            if (first) first.checked = Boolean(estimate.discount.first);
+        }
 
-    const list = document.getElementById("request_lines");
-    list.innerHTML = "";
+        if (estimate.tab === "set" && estimate.set?.planKey) {
+            const plan = document.querySelector(
+                `input[name="set_plan"][value="${CSS.escape(estimate.set.planKey)}"]`
+            );
 
-    const lines = Array.isArray(estimate.lines) && estimate.lines.length
-        ? estimate.lines
-        : ["選択内容なし"];
+            if (plan) {
+                plan.checked = true;
+            }
+        }
+    }
 
-    lines.forEach(line => {
-        const li = document.createElement("li");
-        li.textContent = String(line).replace(/^・/, "");
-        list.appendChild(li);
+    switchTab();
+
+    if (estimate.tab === "set") {
+        updateSetPanels();
+    }
+
+    // イラスト表示を復元
+    ["main", "mv", "movie", "set"].forEach(prefix => {
+        const eshi = document.querySelector(
+            `input[name="eshi_${prefix}"][value="2"]`
+        );
+
+        if (eshi?.checked) {
+            updateIllust(prefix);
+        }
     });
 
-    const setInfo = document.getElementById("set_information");
+    ["mv", "movie"].forEach(prefix => {
+        const checkbox = document.getElementById(`chk_illust_${prefix}`);
 
-    if (estimate.tab === "set" && estimate.set) {
-        setInfo.hidden = false;
+        if (checkbox) {
+            const wrap = document.getElementById(`wrap_illust_${prefix}`);
+            if (wrap) {
+                wrap.style.display = checkbox.checked ? "block" : "none";
+            }
+        }
+    });
 
-        const status = estimate.set.meetsMinimum
-            ? "最低注文額を満たしています。"
-            : "最低注文額を満たしていません。";
-
-        setInfo.innerHTML =
-            `<strong>${escapeHtml(estimate.set.planLabel || "セット料金")}</strong><br>` +
-            `セット割引前：${Number(estimate.set.beforeSetDiscount || 0).toLocaleString()}円<br>` +
-            `最低注文額：${Number(estimate.set.minimum || 0).toLocaleString()}円 / ` +
-            `セット割引：-${Number(estimate.set.setDiscount || 0).toLocaleString()}円<br>` +
-            `<span>${status}</span>`;
-    } else {
-        setInfo.hidden = true;
-    }
+    updatePriceTags();
+    calcTotal();
 }
 
-function getDiscountLabel(discount) {
-    if (!discount) return "なし";
+function setupEditorSync() {
+    document.addEventListener("change", event => {
+        if (event.target.closest(".request-section")) {
+            saveCurrentEstimate();
+        }
+    });
 
-    if (discount.student && discount.first) {
-        return "学生料金 + 初回利用（合計60%OFF）";
-    }
+    document.addEventListener("input", event => {
+        if (event.target.closest(".request-section")) {
+            saveCurrentEstimate();
+        }
+    });
+}
 
-    if (discount.student) {
-        return "学生料金 50%OFF";
-    }
+function saveCurrentEstimate() {
+    if (typeof getCurrentEstimateData !== "function") return;
 
-    if (discount.first) {
-        return "初回利用 20%OFF";
-    }
+    const estimate = getCurrentEstimateData();
 
-    return "なし";
+    localStorage.setItem(
+        ESTIMATE_STORAGE_KEY,
+        JSON.stringify(estimate)
+    );
 }
 
 function setupContactMethod() {
@@ -126,9 +148,9 @@ function setupContactMethod() {
 
     const update = () => {
         const setting = settings[select.value] || settings.other;
+
         input.placeholder = setting.placeholder;
         help.textContent = setting.help;
-
         input.type = select.value === "email" ? "email" : "text";
     };
 
@@ -136,7 +158,7 @@ function setupContactMethod() {
     update();
 }
 
-function setupForm(estimate) {
+function setupForm() {
     const form = document.getElementById("request_form");
 
     form.addEventListener("input", saveDraft);
@@ -145,17 +167,28 @@ function setupForm(estimate) {
     form.addEventListener("submit", event => {
         event.preventDefault();
 
-        if (!estimate) {
-            alert("見積り情報がありません。先に見積りを作成してください。");
-            return;
-        }
-
         if (!form.reportValidity()) {
             return;
         }
 
+        const estimate = getCurrentEstimateData();
+
+        if (estimate.tab === "set" && estimate.set && !estimate.set.meetsMinimum) {
+            alert("現在のセット内容は最低注文額を満たしていません。内容を変更してから確認してください。");
+            return;
+        }
+
         const requestData = buildRequestData(estimate);
-        localStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(requestData));
+
+        localStorage.setItem(
+            REQUEST_DRAFT_KEY,
+            JSON.stringify(requestData)
+        );
+
+        localStorage.setItem(
+            ESTIMATE_STORAGE_KEY,
+            JSON.stringify(estimate)
+        );
 
         renderPreview(requestData);
 
@@ -166,13 +199,15 @@ function setupForm(estimate) {
 
     document.getElementById("edit_request").addEventListener("click", () => {
         document.getElementById("request_preview").hidden = true;
-        form.scrollIntoView({ behavior: "smooth", block: "start" });
+
+        document.querySelector(".request-section")
+            ?.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 }
 
 function buildRequestData(estimate) {
     return {
-        version: 1,
+        version: 2,
         createdAt: new Date().toISOString(),
         estimate,
         applicant: {
@@ -189,12 +224,17 @@ function buildRequestData(estimate) {
 }
 
 function saveDraft() {
-    const estimate = loadEstimate();
+    try {
+        const estimate = getCurrentEstimateData();
+        const requestData = buildRequestData(estimate);
 
-    if (!estimate) return;
-
-    const requestData = buildRequestData(estimate);
-    localStorage.setItem(REQUEST_DRAFT_KEY, JSON.stringify(requestData));
+        localStorage.setItem(
+            REQUEST_DRAFT_KEY,
+            JSON.stringify(requestData)
+        );
+    } catch (error) {
+        console.error("下書き保存に失敗しました。", error);
+    }
 }
 
 function restoreDraft() {
@@ -216,7 +256,8 @@ function restoreDraft() {
         setValue("reference_url", applicant.referenceUrl);
         setValue("notes", applicant.notes);
 
-        document.getElementById("contact_method").dispatchEvent(new Event("change"));
+        document.getElementById("contact_method")
+            ?.dispatchEvent(new Event("change"));
     } catch (error) {
         console.error("依頼フォームの下書き復元に失敗しました。", error);
     }
@@ -239,9 +280,22 @@ function renderPreview(data) {
         .map(line => `<li>${escapeHtml(String(line).replace(/^・/, ""))}</li>`)
         .join("");
 
+    let setBlock = "";
+
+    if (estimate.tab === "set" && estimate.set) {
+        setBlock = `
+            <dt>セット</dt>
+            <dd>${escapeHtml(estimate.set.planLabel || "―")}</dd>
+            <dt>最低注文額</dt>
+            <dd>${Number(estimate.set.minimum || 0).toLocaleString()}円</dd>
+            <dt>セット割引</dt>
+            <dd>-${Number(estimate.set.setDiscount || 0).toLocaleString()}円</dd>
+        `;
+    }
+
     body.innerHTML = `
-        <div class="preview-section">
-            <h3>お見積り</h3>
+        <div class="preview-block">
+            <h3>依頼内容</h3>
             <dl class="preview-data">
                 <dt>依頼区分</dt>
                 <dd>${escapeHtml(estimate.category || "")}</dd>
@@ -249,11 +303,12 @@ function renderPreview(data) {
                 <dd><strong>${Number(estimate.finalTotal || 0).toLocaleString()}円</strong></dd>
                 <dt>割引</dt>
                 <dd>${escapeHtml(getDiscountLabel(estimate.discount))}</dd>
+                ${setBlock}
             </dl>
             <ul class="preview-list">${estimateLines}</ul>
         </div>
 
-        <div class="preview-section">
+        <div class="preview-block">
             <h3>依頼者情報</h3>
             <dl class="preview-data">
                 <dt>活動名 / お名前</dt>
@@ -275,6 +330,24 @@ function renderPreview(data) {
             </dl>
         </div>
     `;
+}
+
+function getDiscountLabel(discount) {
+    if (!discount) return "なし";
+
+    if (discount.student && discount.first) {
+        return "学生料金 + 初回利用（合計60%OFF）";
+    }
+
+    if (discount.student) {
+        return "学生料金 50%OFF";
+    }
+
+    if (discount.first) {
+        return "初回利用 20%OFF";
+    }
+
+    return "なし";
 }
 
 function getContactMethodLabel(value) {
