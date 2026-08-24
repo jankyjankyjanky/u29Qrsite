@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v7
+// script.js v8
 // ============================================================
 
 const TAB_INFO = {
@@ -44,7 +44,7 @@ window.addEventListener("DOMContentLoaded", () => {
 
     if (templateElement) {
         const template = templateElement.innerHTML;
-        ["main", "mv", "movie", "set"].forEach(prefix => {
+        ["main", "set"].forEach(prefix => {
             const wrapper = document.getElementById(`wrap_illust_${prefix}`);
             if (wrapper) {
                 wrapper.innerHTML = template.replace(/PREFIX/g, prefix);
@@ -414,13 +414,12 @@ function calculateMix(isSet = false) {
 // MV
 // ============================================================
 
-function calculateMv(isSet = false, includeIllust = false) {
+function calculateMv(isSet = false) {
     const lengthName = isSet ? "set_mv_length" : "mv_length";
     const configName = isSet ? "set_mv_config" : "mv_config";
     const thumbId = isSet ? "set_opt_mv_thumb" : "opt_mv_thumb";
 
     let discountable = 0;
-    let illust = 0;
     const lines = [];
 
     const length = document.querySelector(`input[name="${lengthName}"]:checked`);
@@ -441,26 +440,11 @@ function calculateMv(isSet = false, includeIllust = false) {
         lines.push("・MVオプション: サムネイル (+500円)");
     }
 
-    if (includeIllust) {
-        const prefix = isSet ? "set" : "mv";
-        illust = getIllustPrice(prefix);
-
-        if (illust > 0) {
-            lines.push(`・イラスト: ${getIllustDescription(prefix)} (+${illust.toLocaleString()}円)`);
-        }
-    } else if (!isSet) {
-        const checkbox = document.getElementById("chk_illust_mv");
-
-        if (checkbox?.checked) {
-            illust = getIllustPrice("mv");
-
-            if (illust > 0) {
-                lines.push(`・イラスト追加: ${getIllustDescription("mv")} (+${illust.toLocaleString()}円)`);
-            }
-        }
-    }
-
-    return { discountable, illust, lines };
+    return {
+        discountable,
+        illust: 0,
+        lines
+    };
 }
 
 
@@ -468,19 +452,16 @@ function calculateMv(isSet = false, includeIllust = false) {
 // 動画
 // ============================================================
 
-function calculateMovie(isSet = false, includeIllust = false) {
+function calculateMovie(isSet = false) {
     const minId = isSet ? "set_movie_min" : "movie_min";
-    const secId = isSet ? "set_movie_sec" : "movie_sec";
     const matId = isSet ? "set_movie_mat" : "movie_mat";
     const cutName = isSet ? "set_movie_cut" : "movie_cut";
     const thumbId = isSet ? "set_opt_movie_thumb" : "opt_movie_thumb";
 
     let discountable = 0;
-    let illust = 0;
     const lines = [];
 
     const minutes = parseInt(document.getElementById(minId)?.value, 10);
-    const seconds = parseInt(document.getElementById(secId)?.value, 10) || 0;
 
     if (!Number.isNaN(minutes)) {
         let basePrice = 0;
@@ -491,7 +472,7 @@ function calculateMovie(isSet = false, includeIllust = false) {
         else basePrice = minutes * 1000;
 
         discountable += basePrice;
-        lines.push(`・動画尺: ${minutes}分${seconds}秒`);
+        lines.push(`・動画尺: ${minutes}分`);
     }
 
     const materials = document.getElementById(matId)?.value;
@@ -511,26 +492,11 @@ function calculateMovie(isSet = false, includeIllust = false) {
         lines.push("・動画オプション: サムネイル (+500円)");
     }
 
-    if (includeIllust) {
-        const prefix = isSet ? "set" : "movie";
-        illust = getIllustPrice(prefix);
-
-        if (illust > 0) {
-            lines.push(`・イラスト: ${getIllustDescription(prefix)} (+${illust.toLocaleString()}円)`);
-        }
-    } else if (!isSet) {
-        const checkbox = document.getElementById("chk_illust_movie");
-
-        if (checkbox?.checked) {
-            illust = getIllustPrice("movie");
-
-            if (illust > 0) {
-                lines.push(`・イラスト追加: ${getIllustDescription("movie")} (+${illust.toLocaleString()}円)`);
-            }
-        }
-    }
-
-    return { discountable, illust, lines };
+    return {
+        discountable,
+        illust: 0,
+        lines
+    };
 }
 
 
@@ -582,13 +548,13 @@ function calculateSet() {
     }
 
     if (info.components.includes("mv")) {
-        const result = calculateMv(true, false);
+        const result = calculateMv(true);
         discountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("movie")) {
-        const result = calculateMovie(true, false);
+        const result = calculateMovie(true);
         discountable += result.discountable;
         lines.push(...result.lines);
     }
@@ -669,9 +635,9 @@ function calcTotal() {
         if (currentTab === "mix") {
             result = calculateMix(false);
         } else if (currentTab === "mv") {
-            result = calculateMv(false, false);
+            result = calculateMv(false);
         } else if (currentTab === "movie") {
-            result = calculateMovie(false, false);
+            result = calculateMovie(false);
         } else if (currentTab === "illust") {
             result = calculateIllust("main");
         }
@@ -832,9 +798,9 @@ function getCurrentEstimateData() {
         if (currentTab === "mix") {
             result = calculateMix(false);
         } else if (currentTab === "mv") {
-            result = calculateMv(false, false);
+            result = calculateMv(false);
         } else if (currentTab === "movie") {
-            result = calculateMovie(false, false);
+            result = calculateMovie(false);
         } else if (currentTab === "illust") {
             result = calculateIllust("main");
         }

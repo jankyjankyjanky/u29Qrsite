@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr ご依頼フォーム
-// request.js v2
+// request.js v3
 // ============================================================
 
 const ESTIMATE_STORAGE_KEY = "u29qr_current_estimate";
@@ -72,24 +72,13 @@ function restoreEstimateIntoEditor(estimate) {
     }
 
     // イラスト表示を復元
-    ["main", "mv", "movie", "set"].forEach(prefix => {
+    ["main", "set"].forEach(prefix => {
         const eshi = document.querySelector(
             `input[name="eshi_${prefix}"][value="2"]`
         );
 
         if (eshi?.checked) {
             updateIllust(prefix);
-        }
-    });
-
-    ["mv", "movie"].forEach(prefix => {
-        const checkbox = document.getElementById(`chk_illust_${prefix}`);
-
-        if (checkbox) {
-            const wrap = document.getElementById(`wrap_illust_${prefix}`);
-            if (wrap) {
-                wrap.style.display = checkbox.checked ? "block" : "none";
-            }
         }
     });
 

@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>u29Qr(うにくる) お見積りサイト</title>
-    <link rel="stylesheet" href="style.css?v=7">
+    <link rel="stylesheet" href="style.css?v=8">
 </head>
 <body>
 
@@ -100,12 +100,12 @@
 
             <div class="field">
                 <strong>オプション</strong><br>
-                <label><input type="checkbox" class="set-mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
-                <label><input type="checkbox" class="set-mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
+                <label><input type="checkbox" id="set_mix_opt_acapella" class="set-mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
+                <label><input type="checkbox" id="set_mix_opt_cutup" class="set-mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
                 <label><input type="checkbox" id="set_opt_mix_encode" value="0" data-label="エンコード"> エンコード <span class="price-tag">0円</span> <span class="desc" style="display:inline;">（MVセットのため無料）</span></label><br>
-                <label><input type="checkbox" class="set-mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
-                <label><input type="checkbox" class="set-mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
-                <label><input type="checkbox" class="set-mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+                <label><input type="checkbox" id="set_mix_opt_pitch" class="set-mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
+                <label><input type="checkbox" id="set_mix_opt_rhythm" class="set-mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
+                <label><input type="checkbox" id="set_mix_opt_speed" class="set-mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
             </div>
         </div>
 
@@ -122,10 +122,10 @@
 
             <div class="field">
                 <strong>MV構成</strong>
-                <label><input type="radio" name="set_mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
-                <label><input type="radio" name="set_mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
-                <label><input type="radio" name="set_mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
-                <label><input type="radio" name="set_mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
+                <label><input type="radio" id="set_mv_config_auto" name="set_mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
+                <label><input type="radio" id="set_mv_config_client" name="set_mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
+                <label><input type="radio" id="set_mv_config_original" name="set_mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
+                <label><input type="radio" id="set_mv_config_simple" name="set_mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
             </div>
 
             <div class="field">
@@ -140,9 +140,8 @@
 
             <div class="field">
                 <strong>動画尺予想</strong>
-                <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分 ※秒切り捨て）</span>
+                <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分）</span>
                 <input type="number" id="set_movie_min" min="0" placeholder="分"> 分
-                <input type="number" id="set_movie_sec" min="0" max="59" placeholder="秒"> 秒
             </div>
 
             <div class="field">
@@ -196,12 +195,12 @@
 
         <div class="field">
             <strong>オプション</strong><br>
-            <label><input type="checkbox" class="mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
+            <label><input type="checkbox" id="mix_opt_acapella" class="mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
+            <label><input type="checkbox" id="mix_opt_cutup" class="mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
             <label><input type="checkbox" id="opt_mix_encode" value="1000" data-label="エンコード"> エンコード <span class="price-tag">+1000円</span> <span class="desc" style="display:inline;">（MVとの同時依頼時は無料）</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
-            <label><input type="checkbox" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+            <label><input type="checkbox" id="mix_opt_pitch" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
+            <label><input type="checkbox" id="mix_opt_rhythm" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
+            <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
         </div>
     </div>
 
@@ -220,20 +219,15 @@
         <div class="field">
             <strong>MV構成</strong>
             <span class="desc">（1000円のプランでないものは、難易度の高い激しいアニメーションを前提としています。Live2Dアニメーションを含む場合は対象外となります）</span>
-            <label><input type="radio" name="mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
-            <label><input type="radio" name="mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
-            <label><input type="radio" name="mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
-            <label><input type="radio" name="mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
+            <label><input type="radio" id="mv_config_auto" name="mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
+            <label><input type="radio" id="mv_config_client" name="mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
+            <label><input type="radio" id="mv_config_original" name="mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
+            <label><input type="radio" id="mv_config_simple" name="mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
         </div>
 
         <div class="field">
             <strong>オプション</strong><br>
             <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
-        </div>
-
-        <div class="field">
-            <label><input type="checkbox" id="chk_illust_mv" onchange="toggleIllust('mv')"> <strong>イラストも追加依頼する</strong></label>
-            <div id="wrap_illust_mv" style="display:none;"></div>
         </div>
     </div>
 
@@ -243,9 +237,8 @@
 
         <div class="field">
             <strong>動画尺予想</strong>
-            <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分 ※秒切り捨て）</span>
+            <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分）</span>
             <input type="number" id="movie_min" min="0" placeholder="分"> 分
-            <input type="number" id="movie_sec" min="0" max="59" placeholder="秒"> 秒
         </div>
 
         <div class="field">
@@ -264,11 +257,6 @@
         <div class="field">
             <strong>オプション</strong><br>
             <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
-        </div>
-
-        <div class="field">
-            <label><input type="checkbox" id="chk_illust_movie" onchange="toggleIllust('movie')"> <strong>イラストも追加依頼する</strong></label>
-            <div id="wrap_illust_movie" style="display:none;"></div>
         </div>
     </div>
 
@@ -327,6 +315,6 @@
     </div>
 </template>
 
-<script src="script.js?v=7"></script>
+<script src="script.js?v=8"></script>
 </body>
 </html>
