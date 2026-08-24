@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v3
+// script.js v4
 // ============================================================
 
 const TAB_INFO = {
@@ -80,16 +80,27 @@ function getCurrentTab() {
 function switchTab() {
     const currentTab = getCurrentTab();
 
+    // すべての予算セクションを一旦非表示
     Object.values(TAB_INFO).forEach(info => {
         const section = document.getElementById(info.sectionId);
-        if (section) section.style.display = "none";
+        if (section) {
+            section.style.display = "none";
+        }
     });
 
+    // 現在のタブだけ表示
     const currentInfo = TAB_INFO[currentTab];
     const currentSection = document.getElementById(currentInfo.sectionId);
 
     if (currentSection) {
         currentSection.style.display = "block";
+    }
+
+    // セットタブを離れた場合、セット専用の表示を確実に閉じる
+    if (currentTab !== "set") {
+        hideSetPanels();
+    } else {
+        renderSetPanels();
     }
 
     const totalTitle = document.getElementById("total-title");
@@ -153,8 +164,23 @@ function updatePriceTags() {
 // セット表示切り替え
 // ============================================================
 
-function updateSetPanels() {
+function hideSetPanels() {
+    ["set_mix_panel", "set_mv_panel", "set_movie_panel", "set_illust_panel"].forEach(id => {
+        const panel = document.getElementById(id);
+        if (panel) {
+            panel.style.display = "none";
+        }
+    });
+
+    const summary = document.getElementById("set_rule_summary");
+    if (summary) {
+        summary.style.display = "none";
+    }
+}
+
+function renderSetPanels() {
     const selectedPlan = document.querySelector('input[name="set_plan"]:checked')?.value;
+
     const panelMap = {
         mix: document.getElementById("set_mix_panel"),
         mv: document.getElementById("set_mv_panel"),
@@ -162,23 +188,29 @@ function updateSetPanels() {
         illust: document.getElementById("set_illust_panel")
     };
 
+    // まず全て閉じる
     Object.values(panelMap).forEach(panel => {
-        if (panel) panel.style.display = "none";
+        if (panel) {
+            panel.style.display = "none";
+        }
     });
 
     const summary = document.getElementById("set_rule_summary");
 
     if (!selectedPlan || !SET_INFO[selectedPlan]) {
-        if (summary) summary.style.display = "none";
-        calcTotal();
+        if (summary) {
+            summary.style.display = "none";
+        }
         return;
     }
 
     const info = SET_INFO[selectedPlan];
 
+    // 選択したセットに含まれる予算系統をすべて下に表示
     info.components.forEach(component => {
-        if (panelMap[component]) {
-            panelMap[component].style.display = "block";
+        const panel = panelMap[component];
+        if (panel) {
+            panel.style.display = "block";
         }
     });
 
@@ -188,7 +220,16 @@ function updateSetPanels() {
             `<strong>${info.label}</strong><br>` +
             `最低注文額：${info.minimum.toLocaleString()}円 / ` +
             `セット割引：-${info.discount.toLocaleString()}円` +
-            `<span class="desc">（学生料金・初回割引を使っても、この最低注文額とセット割引額は変わりません。）</span>`;
+            `<span class="desc">（最低注文額・セット割引額は、学生料金や初回割引を適用しても変わりません。）</span>`;
+    }
+}
+
+function updateSetPanels() {
+    // セット予算タブを開いている時だけ表示する
+    if (getCurrentTab() === "set") {
+        renderSetPanels();
+    } else {
+        hideSetPanels();
     }
 
     calcTotal();
@@ -519,66 +560,78 @@ function calculateSet() {
     if (!planKey || !SET_INFO[planKey]) {
         return {
             finalTotal: 0,
+            beforeSetDiscount: 0,
+            rawSubtotal: 0,
             lines: [],
             planLabel: "",
             minimum: 0,
             setDiscount: 0,
-            adjustedToMinimum: false
+            meetsMinimum: false
         };
     }
 
     const info = SET_INFO[planKey];
-    let discountable = 0;
+
+    let rawDiscountable = 0;
     let illust = 0;
     const lines = [];
 
     if (info.components.includes("mix")) {
         const result = calculateMix(true);
-        discountable += result.discountable;
+        rawDiscountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("mv")) {
         const result = calculateMv(true, false);
-        discountable += result.discountable;
+        rawDiscountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("movie")) {
         const result = calculateMovie(true, false);
-        discountable += result.discountable;
+        rawDiscountable += result.discountable;
         lines.push(...result.lines);
     }
 
     if (info.components.includes("illust")) {
         const result = calculateIllust("set");
         illust += result.illust;
+
         if (result.lines.length) {
-            lines.push(`・イラスト: ${getIllustDescription("set")} (+${illust.toLocaleString()}円)`);
+            lines.push(
+                `・イラスト: ${getIllustDescription("set")} (+${illust.toLocaleString()}円)`
+            );
         }
     }
 
-    // 学割・初回割引は通常サービス部分だけに適用
+    // 最低注文額は「各種割引をかける前」の注文金額で判定する。
+    // そのため学割・初回割引をONにしても最低注文額の基準自体は変わらない。
+    const rawSubtotal = rawDiscountable + illust;
+    const meetsMinimum = rawSubtotal >= info.minimum;
+
+    // 学割・初回割引は通常サービス部分だけに適用。
+    // イラストは従来どおり割引対象外。
     const rate = getDiscountRate();
-    const discountedService = Math.floor(discountable * rate);
+    const discountedService = Math.floor(rawDiscountable * rate);
 
-    // イラストを加えた、セット割引前の金額
-    const componentSubtotal = discountedService + illust;
+    // セット割引を引く直前の表示金額
+    const beforeSetDiscount = discountedService + illust;
 
-    // 最低注文額は学割・初回割引で変えない。
-    // 「最低注文額まで補正」→「固定セット割引」の順で計算する。
-    const baseForSetDiscount = Math.max(componentSubtotal, info.minimum);
-    const adjustedToMinimum = componentSubtotal < info.minimum;
-    const finalTotal = Math.max(0, baseForSetDiscount - info.discount);
+    // 最低注文額を満たしている場合だけ固定額のセット割引を適用
+    const finalTotal = meetsMinimum
+        ? Math.max(0, beforeSetDiscount - info.discount)
+        : beforeSetDiscount;
 
     return {
         finalTotal,
+        beforeSetDiscount,
+        rawSubtotal,
         lines,
         planLabel: info.label,
         minimum: info.minimum,
         setDiscount: info.discount,
-        componentSubtotal,
-        adjustedToMinimum
+        meetsMinimum
     };
 }
 
@@ -596,21 +649,21 @@ function calcTotal() {
     let finalTotal = 0;
     let lines = [];
     let extraMailLines = [];
+    let setResult = null;
 
     if (currentTab === "set") {
-        const result = calculateSet();
-        finalTotal = result.finalTotal;
-        lines = result.lines;
+        setResult = calculateSet();
+        finalTotal = setResult.finalTotal;
+        lines = setResult.lines;
 
-        if (result.planLabel) {
-            extraMailLines.push(`・セット: ${result.planLabel}`);
-            extraMailLines.push(`・最低注文額: ${result.minimum.toLocaleString()}円`);
-            extraMailLines.push(`・セット割引: -${result.setDiscount.toLocaleString()}円`);
+        if (setResult.planLabel) {
+            extraMailLines.push(`・セット: ${setResult.planLabel}`);
+            extraMailLines.push(`・最低注文額: ${setResult.minimum.toLocaleString()}円`);
+            extraMailLines.push(`・セット割引: -${setResult.setDiscount.toLocaleString()}円`);
 
-            if (result.adjustedToMinimum) {
+            if (!setResult.meetsMinimum) {
                 extraMailLines.push(
-                    `・割引後の構成金額 ${result.componentSubtotal.toLocaleString()}円 が最低注文額未満のため、` +
-                    `${result.minimum.toLocaleString()}円を基準にセット割引を適用`
+                    `・現在の割引前注文額: ${setResult.rawSubtotal.toLocaleString()}円（最低注文額未満）`
                 );
             }
         }
@@ -634,10 +687,27 @@ function calcTotal() {
     const info = TAB_INFO[currentTab];
 
     const title = document.getElementById("total-title");
-    if (title) title.textContent = `${info.title}のお見積り金額:`;
+    if (title) {
+        title.textContent = `${info.title}のお見積り金額:`;
+    }
 
     const price = document.getElementById("display_price");
-    if (price) price.textContent = `${finalTotal.toLocaleString()} 円`;
+
+    if (price) {
+        if (currentTab === "set" && setResult?.planLabel) {
+            if (setResult.meetsMinimum) {
+                price.innerHTML =
+                    `<span class="total-original">${setResult.beforeSetDiscount.toLocaleString()}円</span>` +
+                    `<span class="total-discounted">${setResult.finalTotal.toLocaleString()}円</span>`;
+            } else {
+                price.innerHTML =
+                    `<span class="total-current">${setResult.beforeSetDiscount.toLocaleString()}円</span>` +
+                    `<span class="minimum-warning">最低注文額を満たしていません。</span>`;
+            }
+        } else {
+            price.textContent = `${finalTotal.toLocaleString()} 円`;
+        }
+    }
 
     updateSubmitButton(currentTab, finalTotal, lines, extraMailLines);
 }
