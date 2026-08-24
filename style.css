@@ -267,3 +267,45 @@ input[type="number"] {
         margin-top: 3px;
     }
 }
+
+
+/* セット料金：下部のお見積り表示 */
+.total-original {
+    color: rgba(255, 255, 255, 0.65);
+    text-decoration: line-through;
+    text-decoration-thickness: 2px;
+    font-size: 0.78em;
+    margin-right: 10px;
+    white-space: nowrap;
+}
+
+.total-discounted {
+    color: #FFCA28;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.total-current {
+    color: #FFCA28;
+    font-weight: bold;
+    white-space: nowrap;
+}
+
+.minimum-warning {
+    display: inline-block;
+    margin-left: 12px;
+    color: #FFCDD2;
+    font-size: 0.58em;
+    font-weight: bold;
+    vertical-align: middle;
+    white-space: nowrap;
+}
+
+@media (max-width: 600px) {
+    .minimum-warning {
+        display: block;
+        margin-left: 0;
+        margin-top: 3px;
+        white-space: normal;
+    }
+}
