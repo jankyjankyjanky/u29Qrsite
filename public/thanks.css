@@ -1,0 +1,82 @@
+body.thanks-page {
+    padding-bottom: 40px;
+}
+
+.thanks-container {
+    max-width: 680px;
+    margin: 40px auto;
+    padding: 0 15px;
+}
+
+.thanks-card {
+    background: #fff;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 30px 24px;
+    text-align: center;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.thanks-card h2 {
+    color: #5D4037;
+    border-bottom: 2px solid #FFCA28;
+    padding-bottom: 10px;
+    margin-top: 12px;
+}
+
+.thanks-mark {
+    width: 58px;
+    height: 58px;
+    margin: 0 auto;
+    border-radius: 50%;
+    background: #FFCA28;
+    color: #3E2723;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 2rem;
+    font-weight: bold;
+}
+
+.thanks-text {
+    line-height: 1.7;
+}
+
+.request-id-box {
+    background: #FFF8E1;
+    border: 1px dashed #FFCA28;
+    border-radius: 8px;
+    padding: 16px;
+    margin: 22px 0 10px;
+}
+
+.request-id-box span {
+    display: block;
+    color: #757575;
+    font-size: 0.85rem;
+}
+
+.request-id-box strong {
+    display: block;
+    color: #5D4037;
+    font-size: 1.7rem;
+    margin-top: 4px;
+}
+
+.discord-note {
+    margin: 18px 0;
+    background: #EFEBE1;
+    border-radius: 8px;
+    padding: 10px 12px;
+    color: #5D4037;
+    font-size: 0.88rem;
+}
+
+.thanks-actions {
+    margin-top: 24px;
+}
+
+.thanks-button {
+    display: inline-block;
+    text-decoration: none;
+}

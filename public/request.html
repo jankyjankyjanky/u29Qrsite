@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>u29Qr(うにくる) ご依頼フォーム</title>
+    <link rel="stylesheet" href="style.css?v=10">
+    <link rel="stylesheet" href="request.css?v=5">
+</head>
+<body class="request-page">
+
+<header>
+    <h1>u29Qr (うにくる) ご依頼フォーム</h1>
+</header>
+
+<main class="request-container">
+
+    <!-- ======================================================
+         依頼内容
+         ====================================================== -->
+    <section class="request-section">
+        <h2>依頼内容</h2>
+        <span class="desc">
+            見積りページから引き継いだ内容を、このページでも自由に変更できます。
+            依頼する種類は下のタブから1つだけ選択してください。
+        </span>
+
+        <div class="request-tab-wrap">
+            <input type="radio" name="main_tab" id="tab_mix" value="mix" class="tab-radio" checked onchange="switchTab()">
+            <label for="tab_mix" class="tab-label">MIX</label>
+
+            <input type="radio" name="main_tab" id="tab_mv" value="mv" class="tab-radio" onchange="switchTab()">
+            <label for="tab_mv" class="tab-label">MV</label>
+
+            <input type="radio" name="main_tab" id="tab_movie" value="movie" class="tab-radio" onchange="switchTab()">
+            <label for="tab_movie" class="tab-label">動画編集</label>
+
+            <input type="radio" name="main_tab" id="tab_illust" value="illust" class="tab-radio" onchange="switchTab()">
+            <label for="tab_illust" class="tab-label">イラスト</label>
+
+            <input type="radio" name="main_tab" id="tab_set" value="set" class="tab-radio" onchange="switchTab()">
+            <label for="tab_set" class="tab-label">セットでの依頼</label>
+        </div>
+
+
+        <div class="global-settings request-global-settings">
+            <strong>【基本設定】割引の適用</strong><br>
+            <label><input type="checkbox" id="chk_student"> 学生料金（小、中、高、大）50%off</label><br>
+            <span class="desc">（学生証などの提示は不要です。イラストには適用されません。）</span>
+            <label><input type="checkbox" id="chk_first"> 初回利用者 20%off</label><br>
+            <span class="desc">（学割と同時適応で 60%off となります。）</span>
+        </div>
+
+
+        <!-- MIX -->
+        <div id="sec_mix" class="section request-budget-section">
+            <h2>歌ってみたMIX</h2>
+
+            <div class="field">
+                <label><strong>人数</strong> <span class="required">必須</span></label>
+                <input type="number" id="mix_users" value="1" min="1" required> 人
+                <span class="desc">（コラボ時は基本料金×人数となります）</span>
+            </div>
+
+            <div class="field">
+                <strong>基本料金</strong> <span class="required">必須</span>
+                <span class="desc">（軽めのピッチ、リズム補正・ノイズ、ブレス除去・リバーブ等の最低限のエフェクト・マスタリング）</span>
+                <label><input type="radio" name="mix_base" value="500" data-label="サビのみ"> サビのみ <span class="price-tag">500円</span></label><br>
+                <label><input type="radio" name="mix_base" value="1000" data-label="ワンコーラス"> ワンコーラス <span class="price-tag">1000円</span></label><br>
+                <label><input type="radio" name="mix_base" value="2000" data-label="フルコーラス"> フルコーラス <span class="price-tag">2000円</span></label>
+            </div>
+
+            <div class="field">
+                <strong>ハモリ</strong> <span class="required">必須</span><br>
+                <label><input type="radio" name="mix_harm" value="0" data-label="ハモリ不要 or ハモリ録音済み" checked> ハモリ不要 or ハモリ録音済み <span class="price-tag">0円</span></label><br>
+                <label><input type="radio" name="mix_harm" value="1000" data-label="ハモリのMIDIデータ or wavデータ提供"> ハモリのMIDIデータ or wavデータ提供 <span class="price-tag">+1000円</span></label><br>
+                <label><input type="radio" name="mix_harm" value="3000" data-label="ハモリを生成"> ハモリを生成 <span class="price-tag">+3000円</span></label>
+            </div>
+
+            <div class="field">
+                <strong>オプション</strong><br>
+                <label><input type="checkbox" id="mix_opt_acapella" class="mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
+                <label><input type="checkbox" id="mix_opt_cutup" class="mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
+                <label><input type="checkbox" id="opt_mix_encode" value="1000" data-label="エンコード"> エンコード <span class="price-tag">+1000円</span></label><br>
+                <label><input type="checkbox" id="mix_opt_pitch" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
+                <label><input type="checkbox" id="mix_opt_rhythm" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
+                <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+            </div>
+        </div>
+
+        <!-- MV -->
+        <div id="sec_mv" class="section request-budget-section">
+            <h2>歌ってみた用MV制作 (shorts含む)</h2>
+
+            <div class="field">
+                <strong>動画尺</strong> <span class="required">必須</span>
+                <label><input type="radio" name="mv_length" value="1000" data-label="サビのみ"> サビのみ <span class="price-tag">1000円</span></label><br>
+                <label><input type="radio" name="mv_length" value="2000" data-label="１番のみ"> １番のみ <span class="price-tag">2000円</span></label><br>
+                <label><input type="radio" name="mv_length" value="4000" data-label="曲フル"> 曲フル <span class="price-tag">4000円</span></label>
+            </div>
+
+            <div class="field">
+                <strong>MV構成</strong> <span class="required">必須</span>
+                <label><input type="radio" id="mv_config_auto" name="mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
+                <label><input type="radio" id="mv_config_client" name="mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
+                <label><input type="radio" id="mv_config_original" name="mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
+                <label><input type="radio" id="mv_config_simple" name="mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
+            </div>
+
+            <div class="field">
+                <strong>オプション</strong><br>
+                <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+            </div>
+        </div>
+
+        <!-- 動画 -->
+        <div id="sec_movie" class="section request-budget-section">
+            <h2>動画編集・動画作成 (shorts含む)</h2>
+
+            <div class="field">
+                <strong>動画尺予想</strong> <span class="required">必須</span>
+                <span class="desc">（3分未満:1500円 / 3分以上:400円/分 / 8分以上:500円/分 / 30分以上:1000円/分）</span>
+                <input type="number" id="movie_min" min="0" placeholder="分" required> 分
+            </div>
+
+            <div class="field">
+                <strong>動画の素材数</strong> <span class="required">必須</span>
+                <input type="number" id="movie_mat" min="1" value="1" required>
+            </div>
+
+            <div class="field">
+                <strong>動画のカットについて</strong> <span class="required">必須</span><br>
+                <label><input type="radio" name="movie_cut" value="0" data-label="すでにカット済み"> すでにカット済み <span class="price-tag">0円</span></label><br>
+                <label><input type="radio" name="movie_cut" value="1000" data-label="秒数指定あり"> 秒数指定あり <span class="price-tag">1000円</span></label><br>
+                <label><input type="radio" name="movie_cut" value="5000" data-label="おまかせ"> おまかせで面白く動画を作って欲しい <span class="price-tag">5000円</span></label>
+            </div>
+
+            <div class="field">
+                <strong>オプション</strong><br>
+                <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+            </div>
+        </div>
+
+        <!-- イラスト -->
+        <div id="sec_illust" class="section request-budget-section">
+            <h2>イラスト単体依頼</h2>
+            <div id="wrap_illust_main"></div>
+        </div>
+
+        <!-- セット -->
+        <div id="sec_set" class="section request-budget-section">
+            <h2>セットでの依頼</h2>
+
+            <div class="field set-choice">
+                <strong>セットを選択</strong> <span class="required">必須</span>
+                <span class="desc">最低注文額は学割・初回割引を適用した後の金額で判定します。最低注文額とセット割引額そのものは変わりません。</span>
+
+                <label><input type="radio" name="set_plan" value="mix_mv" onchange="updateSetPanels()"> MIX + MVセット <span class="set-fixed-tag">最低注文額 2,000円 / -500円</span></label><br>
+                <label><input type="radio" name="set_plan" value="mv_illust" onchange="updateSetPanels()"> MV + イラストセット <span class="set-fixed-tag">最低注文額 1,500円 / -300円</span></label><br>
+                <label><input type="radio" name="set_plan" value="movie_illust" onchange="updateSetPanels()"> 動画 + イラストセット <span class="set-fixed-tag">最低注文額 2,000円 / -500円</span></label><br>
+                <label><input type="radio" name="set_plan" value="mix_mv_illust" onchange="updateSetPanels()"> MIX + MV + イラストセット <span class="set-fixed-tag">最低注文額 3,000円 / -1,000円</span></label>
+            </div>
+
+            <div id="set_rule_summary" class="set-rule-summary" style="display:none;"></div>
+
+            <div id="set_mix_panel" class="set-component" style="display:none;">
+                <h3>MIX</h3>
+
+                <div class="field">
+                    <label><strong>人数</strong> <span class="required">必須</span></label>
+                    <input type="number" id="set_mix_users" value="1" min="1" required> 人
+                </div>
+
+                <div class="field">
+                    <strong>基本料金</strong> <span class="required">必須</span><br>
+                    <label><input type="radio" name="set_mix_base" value="500" data-label="サビのみ"> サビのみ <span class="price-tag">500円</span></label><br>
+                    <label><input type="radio" name="set_mix_base" value="1000" data-label="ワンコーラス"> ワンコーラス <span class="price-tag">1000円</span></label><br>
+                    <label><input type="radio" name="set_mix_base" value="2000" data-label="フルコーラス"> フルコーラス <span class="price-tag">2000円</span></label>
+                </div>
+
+                <div class="field">
+                    <strong>ハモリ</strong> <span class="required">必須</span><br>
+                    <label><input type="radio" name="set_mix_harm" value="0" data-label="ハモリ不要 or ハモリ録音済み" checked> ハモリ不要 or ハモリ録音済み <span class="price-tag">0円</span></label><br>
+                    <label><input type="radio" name="set_mix_harm" value="1000" data-label="ハモリのMIDIデータ or wavデータ提供"> ハモリのMIDIデータ or wavデータ提供 <span class="price-tag">+1000円</span></label><br>
+                    <label><input type="radio" name="set_mix_harm" value="3000" data-label="ハモリを生成"> ハモリを生成 <span class="price-tag">+3000円</span></label>
+                </div>
+
+                <div class="field">
+                    <strong>オプション</strong><br>
+                    <label><input type="checkbox" id="set_mix_opt_acapella" class="set-mix-opt" value="500" data-label="アカペラ音源同封"> アカペラ音源同封 <span class="price-tag">+500円</span></label><br>
+                    <label><input type="checkbox" id="set_mix_opt_cutup" class="set-mix-opt" value="500" data-label="カットアップ"> カットアップ <span class="price-tag">+500円</span></label><br>
+                    <label><input type="checkbox" id="set_opt_mix_encode" value="0" data-label="エンコード"> エンコード <span class="price-tag">0円</span> <span class="desc" style="display:inline;">（MVセットのため無料）</span></label><br>
+                    <label><input type="checkbox" id="set_mix_opt_pitch" class="set-mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
+                    <label><input type="checkbox" id="set_mix_opt_rhythm" class="set-mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
+                    <label><input type="checkbox" id="set_mix_opt_speed" class="set-mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+                </div>
+            </div>
+
+            <div id="set_mv_panel" class="set-component" style="display:none;">
+                <h3>MV</h3>
+
+                <div class="field">
+                    <strong>動画尺</strong> <span class="required">必須</span><br>
+                    <label><input type="radio" name="set_mv_length" value="1000" data-label="サビのみ"> サビのみ <span class="price-tag">1000円</span></label><br>
+                    <label><input type="radio" name="set_mv_length" value="2000" data-label="１番のみ"> １番のみ <span class="price-tag">2000円</span></label><br>
+                    <label><input type="radio" name="set_mv_length" value="4000" data-label="曲フル"> 曲フル <span class="price-tag">4000円</span></label>
+                </div>
+
+                <div class="field">
+                    <strong>MV構成</strong> <span class="required">必須</span><br>
+                    <label><input type="radio" id="set_mv_config_auto" name="set_mv_config" value="5000" data-label="構成はおまかせ"> 構成はu29Qrにおまかせする <span class="price-tag">5000円</span></label><br>
+                    <label><input type="radio" id="set_mv_config_client" name="set_mv_config" value="3000" data-label="構成は依頼者が決定"> 構成は依頼者が決定する <span class="price-tag">3000円</span></label><br>
+                    <label><input type="radio" id="set_mv_config_original" name="set_mv_config" value="3000" data-label="本家MVに寄せる"> 本家MVのアニメーション構成に寄せる <span class="price-tag">3000円</span></label><br>
+                    <label><input type="radio" id="set_mv_config_simple" name="set_mv_config" value="1000" data-label="最低限のアニメーション"> 最低限のアニメーション・エフェクト・文字入れのみ <span class="price-tag">1000円</span></label>
+                </div>
+
+                <div class="field">
+                    <strong>オプション</strong><br>
+                    <label><input type="checkbox" id="set_opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+                </div>
+            </div>
+
+            <div id="set_movie_panel" class="set-component" style="display:none;">
+                <h3>動画編集・動画作成</h3>
+
+                <div class="field">
+                    <strong>動画尺予想</strong> <span class="required">必須</span>
+                    <input type="number" id="set_movie_min" min="0" placeholder="分" required> 分
+                </div>
+
+                <div class="field">
+                    <strong>動画の素材数</strong> <span class="required">必須</span>
+                    <input type="number" id="set_movie_mat" min="1" value="1" required>
+                </div>
+
+                <div class="field">
+                    <strong>動画のカットについて</strong> <span class="required">必須</span><br>
+                    <label><input type="radio" name="set_movie_cut" value="0" data-label="すでにカット済み"> すでにカット済み <span class="price-tag">0円</span></label><br>
+                    <label><input type="radio" name="set_movie_cut" value="1000" data-label="秒数指定あり"> 秒数指定あり <span class="price-tag">1000円</span></label><br>
+                    <label><input type="radio" name="set_movie_cut" value="5000" data-label="おまかせ"> おまかせで面白く動画を作って欲しい <span class="price-tag">5000円</span></label>
+                </div>
+
+                <div class="field">
+                    <strong>オプション</strong><br>
+                    <label><input type="checkbox" id="set_opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+                </div>
+            </div>
+
+            <div id="set_illust_panel" class="set-component" style="display:none;">
+                <h3>イラスト</h3>
+                <div id="wrap_illust_set"></div>
+            </div>
+        </div>
+
+
+        <div id="estimate_required_error" class="estimate-required-message" hidden></div>
+
+        <div class="request-estimate-bar">
+            <div>
+                <span id="total-title">MIXのお見積り金額:</span>
+                <span class="total-price" id="display_price">0 円</span>
+            </div>
+            <span class="desc request-estimate-note">入力内容を変更すると自動で再計算されます。</span>
+        </div>
+    </section>
+
+
+    <!-- ======================================================
+         依頼者情報
+         ====================================================== -->
+    <section class="request-section">
+        <h2>依頼者情報</h2>
+
+        <form id="request_form">
+            <div class="request-field">
+                <label for="activity_name">活動名 / お名前 <span class="required">必須</span></label>
+                <input type="text" id="activity_name" name="activity_name" autocomplete="name" required placeholder="例：うにくる">
+            </div>
+
+            <div class="request-field">
+                <label for="contact_method">希望する連絡方法 <span class="required">必須</span></label>
+                <select id="contact_method" name="contact_method" required>
+                    <option value="discord">Discord</option>
+                    <option value="x">X（Twitter）</option>
+                    <option value="email">メール</option>
+                    <option value="other">その他</option>
+                </select>
+            </div>
+
+            <div class="request-field">
+                <label for="contact_value">連絡先 <span class="required">必須</span></label>
+                <input type="text" id="contact_value" name="contact_value" required placeholder="Discordのユーザー名・XのIDなど">
+                <span class="desc" id="contact_help">Discordのユーザー名を入力してください。</span>
+            </div>
+
+            <div class="request-grid">
+                <div class="request-field">
+                    <label for="deadline">希望納期</label>
+                    <input type="date" id="deadline" name="deadline">
+                </div>
+
+                <div class="request-field">
+                    <label for="public_date">公開予定日</label>
+                    <input type="date" id="public_date" name="public_date">
+                </div>
+            </div>
+
+            <div class="request-field">
+                <label for="materials_url">素材URL</label>
+                <input type="url" id="materials_url" name="materials_url" placeholder="Google DriveなどのURL">
+                <span class="desc">まだ素材が揃っていない場合は空欄でも構いません。</span>
+            </div>
+
+            <div class="request-field">
+                <label for="reference_url">参考URL</label>
+                <input type="url" id="reference_url" name="reference_url" placeholder="参考動画・本家MVなど">
+            </div>
+
+            <div class="request-field">
+                <label for="notes">ご要望・補足</label>
+                <textarea id="notes" name="notes" rows="7" placeholder="制作のイメージ、注意事項、相談したいことなど"></textarea>
+            </div>
+
+            <label class="consent-row">
+                <input type="checkbox" id="agree" required>
+                <span>依頼内容と入力内容を確認しました。</span>
+            </label>
+
+            <div class="backend-notice">
+                <strong>依頼送信について</strong>
+                <span>確認後に「依頼を送信」を押すと、依頼内容が保存され、管理者のDiscordへ新規依頼の通知が送信されます。</span>
+            </div>
+
+            <div class="honeypot-field" aria-hidden="true">
+                <label for="website">ウェブサイト</label>
+                <input type="text" id="website" name="website" tabindex="-1" autocomplete="off">
+            </div>
+
+            <div class="request-actions">
+                <a class="secondary-button" href="index.html">見積りページへ戻る</a>
+                <button type="submit" class="btn-submit request-confirm-button">入力内容を確認する</button>
+            </div>
+        </form>
+    </section>
+
+    <section id="request_preview" class="request-section preview-card" hidden>
+        <h2>送信内容の確認</h2>
+        <div id="preview_body"></div>
+
+        <div id="submit_status" class="submit-status" hidden></div>
+
+        <div class="request-actions">
+            <button type="button" class="secondary-button button-reset" id="edit_request">入力内容を修正する</button>
+            <button type="button" class="btn-submit" id="final_submit">依頼を送信</button>
+        </div>
+    </section>
+</main>
+
+<template id="tmpl_illust">
+    <div class="illust-sub-form">
+        <span class="desc">（イラストに学割は適応されません。）</span>
+
+        <div class="illust-images">
+            <div>
+                <img src="https://via.placeholder.com/100?text=Eshi+1" alt="絵師1"><br>
+                <small>絵師１</small>
+            </div>
+            <div>
+                <img src="https://via.placeholder.com/100?text=Eshi+2" alt="絵師2"><br>
+                <small>絵師２</small>
+            </div>
+        </div>
+
+        <div class="field">
+            <strong>絵師を選択</strong> <span class="required">必須</span><br>
+            <label><input type="radio" name="eshi_PREFIX" value="1" disabled> 絵師１ <span class="desc" style="display:inline;">（現在依頼停止中です）</span></label><br>
+            <label><input type="radio" name="eshi_PREFIX" value="2" onchange="updateIllust('PREFIX')"> 絵師２</label>
+        </div>
+
+        <div id="eshi2_area_PREFIX" style="display:none;">
+            <div class="field">
+                <strong>絵柄</strong> <span class="required">必須</span><br>
+                <label><input type="radio" name="style_PREFIX" value="normal" data-label="通常" onchange="updateIllust('PREFIX')"> 通常</label>
+                <label><input type="radio" name="style_PREFIX" value="simple" data-label="簡易" onchange="updateIllust('PREFIX')"> 簡易</label>
+                <label><input type="radio" name="style_PREFIX" value="deform" data-label="デフォルメ" onchange="updateIllust('PREFIX')"> デフォルメ</label>
+            </div>
+
+            <div id="range_area_PREFIX" style="display:none;">
+                <strong>立ち絵範囲</strong> <span class="required">必須</span><br>
+                <label id="lbl_face_PREFIX"><input type="radio" name="range_PREFIX" value="face" data-label="お顔のみ"> お顔のみ <span class="price-tag" id="price_face_PREFIX"></span><br></label>
+                <label id="lbl_chest_PREFIX"><input type="radio" name="range_PREFIX" value="chest" data-label="胸上"> 胸上 <span class="price-tag" id="price_chest_PREFIX"></span><br></label>
+                <label id="lbl_knee_PREFIX"><input type="radio" name="range_PREFIX" value="knee" data-label="膝上"> 膝上 <span class="price-tag" id="price_knee_PREFIX"></span><br></label>
+                <label id="lbl_full_PREFIX"><input type="radio" name="range_PREFIX" value="full" data-label="全身"> 全身 <span class="price-tag" id="price_full_PREFIX"></span><br></label>
+            </div>
+        </div>
+    </div>
+</template>
+
+<script src="script.js?v=10"></script>
+<script type="module" src="firebase-client.js?v=1"></script>
+<script src="request.js?v=5"></script>
+</body>
+</html>
