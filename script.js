@@ -1,305 +1,125 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js
-// ============================================================
-
-
-// ============================================================
-// タブ情報
+// script.js v3
 // ============================================================
 
 const TAB_INFO = {
-    mix: {
-        sectionId: "sec_mix",
-        title: "MIX",
-        mailTitle: "MIX予算"
-    },
+    set:    { sectionId: "sec_set",    title: "セット",       mailTitle: "セット予算" },
+    mix:    { sectionId: "sec_mix",    title: "MIX",          mailTitle: "MIX予算" },
+    mv:     { sectionId: "sec_mv",     title: "MV",           mailTitle: "MV予算" },
+    movie:  { sectionId: "sec_movie",  title: "動画",         mailTitle: "動画予算" },
+    illust: { sectionId: "sec_illust", title: "イラスト",     mailTitle: "イラスト予算" }
+};
 
-    mv: {
-        sectionId: "sec_mv",
-        title: "MV",
-        mailTitle: "MV予算"
+const SET_INFO = {
+    mix_mv: {
+        label: "MIX + MVセット",
+        minimum: 2000,
+        discount: 500,
+        components: ["mix", "mv"]
     },
-
-    movie: {
-        sectionId: "sec_movie",
-        title: "動画",
-        mailTitle: "動画予算"
+    mv_illust: {
+        label: "MV + イラストセット",
+        minimum: 1500,
+        discount: 300,
+        components: ["mv", "illust"]
     },
-
-    thumb: {
-        sectionId: "sec_thumb",
-        title: "サムネイル",
-        mailTitle: "サムネイル予算"
+    movie_illust: {
+        label: "動画 + イラストセット",
+        minimum: 2000,
+        discount: 500,
+        components: ["movie", "illust"]
     },
-
-    illust: {
-        sectionId: "sec_illust",
-        title: "イラスト",
-        mailTitle: "イラスト予算"
+    mix_mv_illust: {
+        label: "MIX + MV + イラストセット",
+        minimum: 3000,
+        discount: 1000,
+        components: ["mix", "mv", "illust"]
     }
 };
 
-
-// ============================================================
-// 初期化
-// ============================================================
-
 window.addEventListener("DOMContentLoaded", () => {
-
-    // --------------------------------------------------------
     // イラストフォームを各場所へ展開
-    // --------------------------------------------------------
-
     const templateElement = document.getElementById("tmpl_illust");
 
     if (templateElement) {
-
         const template = templateElement.innerHTML;
-
-        const prefixes = [
-            "main",
-            "mv",
-            "movie",
-            "thumb"
-        ];
-
-        prefixes.forEach(prefix => {
-
-            const wrapper = document.getElementById(
-                `wrap_illust_${prefix}`
-            );
-
+        ["main", "mv", "movie", "set"].forEach(prefix => {
+            const wrapper = document.getElementById(`wrap_illust_${prefix}`);
             if (wrapper) {
-
-                wrapper.innerHTML =
-                    template.replace(/PREFIX/g, prefix);
-
+                wrapper.innerHTML = template.replace(/PREFIX/g, prefix);
             }
-
         });
-
     }
 
-
-    // --------------------------------------------------------
-    // 入力変更時に見積もりを再計算
-    // --------------------------------------------------------
-
+    // 入力変更時に再計算
     document.addEventListener("change", () => {
-
         updatePriceTags();
-
         calcTotal();
-
     });
-
 
     document.addEventListener("input", () => {
-
         calcTotal();
-
     });
 
-
-    // --------------------------------------------------------
-    // 初期表示
-    // --------------------------------------------------------
-
     switchTab();
-
+    updateSetPanels();
     updatePriceTags();
-
     calcTotal();
-
 });
 
 
 // ============================================================
-// 現在選択されているタブを取得
+// 共通
 // ============================================================
 
 function getCurrentTab() {
-
-    const selected = document.querySelector(
-        'input[name="main_tab"]:checked'
-    );
-
-    return selected ? selected.value : "mix";
-
+    return document.querySelector('input[name="main_tab"]:checked')?.value || "mix";
 }
 
-
-// ============================================================
-// タブ切り替え
-// ============================================================
-
 function switchTab() {
-
     const currentTab = getCurrentTab();
 
-    const sections = [
-        "sec_mix",
-        "sec_mv",
-        "sec_movie",
-        "sec_thumb",
-        "sec_illust"
-    ];
-
-
-    // 全部非表示
-    sections.forEach(id => {
-
-        const section = document.getElementById(id);
-
-        if (section) {
-            section.style.display = "none";
-        }
-
+    Object.values(TAB_INFO).forEach(info => {
+        const section = document.getElementById(info.sectionId);
+        if (section) section.style.display = "none";
     });
 
-
-    // 現在のタブだけ表示
-    const currentSection = document.getElementById(
-        `sec_${currentTab}`
-    );
+    const currentInfo = TAB_INFO[currentTab];
+    const currentSection = document.getElementById(currentInfo.sectionId);
 
     if (currentSection) {
         currentSection.style.display = "block";
     }
 
-
-    // ==========================================
-    // 下部の「○○のお見積り金額」を変更
-    // ==========================================
-
-    const titles = {
-        mix: "MIX",
-        mv: "MV",
-        movie: "動画",
-        thumb: "サムネイル",
-        illust: "イラスト"
-    };
-
-    const totalTitle = document.getElementById(
-        "total-title"
-    );
-
+    const totalTitle = document.getElementById("total-title");
     if (totalTitle) {
-
-        totalTitle.textContent =
-            `${titles[currentTab]}のお見積り金額:`;
-
+        totalTitle.textContent = `${currentInfo.title}のお見積り金額:`;
     }
 
-
-    // 現在のタブだけ再計算
     calcTotal();
 }
 
-
-// ============================================================
-// 割引率を取得
-// ============================================================
-
 function getDiscountRate() {
+    const isStudent = document.getElementById("chk_student")?.checked ?? false;
+    const isFirst = document.getElementById("chk_first")?.checked ?? false;
 
-    const student =
-        document.getElementById("chk_student");
-
-    const first =
-        document.getElementById("chk_first");
-
-
-    const isStudent =
-        student ? student.checked : false;
-
-    const isFirst =
-        first ? first.checked : false;
-
-
-    // 学割＋初回
-    // 60%OFF
-    if (isStudent && isFirst) {
-
-        return 0.4;
-
-    }
-
-
-    // 学割
-    // 50%OFF
-    if (isStudent) {
-
-        return 0.5;
-
-    }
-
-
-    // 初回
-    // 20%OFF
-    if (isFirst) {
-
-        return 0.8;
-
-    }
-
-
-    // 割引なし
+    if (isStudent && isFirst) return 0.4;
+    if (isStudent) return 0.5;
+    if (isFirst) return 0.8;
     return 1;
-
 }
-
-
-// ============================================================
-// 割引後価格
-// ============================================================
-
-function applyDiscount(price) {
-
-    const rate =
-        getDiscountRate();
-
-    return Math.floor(
-        price * rate
-    );
-
-}
-
-
-// ============================================================
-// 料金表示を更新
-//
-// 例：
-// 1000円
-//
-// ↓ 学割
-//
-// 1,000円 → 500円
-//
-// ※ イラストは割引対象外
-// ============================================================
 
 function updatePriceTags() {
-
     const rate = getDiscountRate();
 
     document.querySelectorAll(".price-tag").forEach(tag => {
-
         // イラストは割引対象外
-        if (tag.closest(".illust-sub-form")) {
-            return;
-        }
+        if (tag.closest(".illust-sub-form")) return;
 
-
-        // 最初の1回だけ元価格を保存
         if (!tag.dataset.originalPrice) {
-
             const match = tag.textContent.match(/[+＋]?\s*[\d,]+/);
-
-            if (!match) {
-                return;
-            }
+            if (!match) return;
 
             tag.dataset.originalPrice = match[0]
                 .replace(/,/g, "")
@@ -307,1327 +127,574 @@ function updatePriceTags() {
                 .replace(/\s/g, "");
         }
 
-
         const originalText = tag.dataset.originalPrice;
-
         const hasPlus = originalText.startsWith("+");
+        const originalPrice = parseInt(originalText.replace("+", ""), 10);
 
-        const originalPrice = parseInt(
-            originalText.replace("+", ""),
-            10
-        );
-
-        if (Number.isNaN(originalPrice)) {
-            return;
-        }
-
+        if (Number.isNaN(originalPrice)) return;
 
         const prefix = hasPlus ? "+" : "";
 
-
-        // ==========================================
-        // 割引なし
-        // ==========================================
-
         if (rate === 1 || originalPrice === 0) {
-
-            tag.innerHTML =
-                `${prefix}${originalPrice.toLocaleString()}円`;
-
+            tag.innerHTML = `${prefix}${originalPrice.toLocaleString()}円`;
             return;
         }
 
+        const discountedPrice = Math.floor(originalPrice * rate);
 
-        // ==========================================
-        // 割引あり
-        // ==========================================
-
-        const discountedPrice = Math.floor(
-            originalPrice * rate
-        );
-
-
-        tag.innerHTML = `
-            <span class="price-original">
-                ${prefix}${originalPrice.toLocaleString()}円
-            </span>
-            <span class="price-discounted">
-                ${prefix}${discountedPrice.toLocaleString()}円
-            </span>
-        `;
+        tag.innerHTML =
+            `<span class="price-original">${prefix}${originalPrice.toLocaleString()}円</span>` +
+            `<span class="price-discounted">${prefix}${discountedPrice.toLocaleString()}円</span>`;
     });
 }
 
 
 // ============================================================
-// イラスト追加フォーム表示切り替え
+// セット表示切り替え
+// ============================================================
+
+function updateSetPanels() {
+    const selectedPlan = document.querySelector('input[name="set_plan"]:checked')?.value;
+    const panelMap = {
+        mix: document.getElementById("set_mix_panel"),
+        mv: document.getElementById("set_mv_panel"),
+        movie: document.getElementById("set_movie_panel"),
+        illust: document.getElementById("set_illust_panel")
+    };
+
+    Object.values(panelMap).forEach(panel => {
+        if (panel) panel.style.display = "none";
+    });
+
+    const summary = document.getElementById("set_rule_summary");
+
+    if (!selectedPlan || !SET_INFO[selectedPlan]) {
+        if (summary) summary.style.display = "none";
+        calcTotal();
+        return;
+    }
+
+    const info = SET_INFO[selectedPlan];
+
+    info.components.forEach(component => {
+        if (panelMap[component]) {
+            panelMap[component].style.display = "block";
+        }
+    });
+
+    if (summary) {
+        summary.style.display = "block";
+        summary.innerHTML =
+            `<strong>${info.label}</strong><br>` +
+            `最低注文額：${info.minimum.toLocaleString()}円 / ` +
+            `セット割引：-${info.discount.toLocaleString()}円` +
+            `<span class="desc">（学生料金・初回割引を使っても、この最低注文額とセット割引額は変わりません。）</span>`;
+    }
+
+    calcTotal();
+}
+
+
+// ============================================================
+// イラスト
 // ============================================================
 
 function toggleIllust(prefix) {
+    const checkbox = document.getElementById(`chk_illust_${prefix}`);
+    const wrapper = document.getElementById(`wrap_illust_${prefix}`);
 
-    const checkbox =
-        document.getElementById(
-            `chk_illust_${prefix}`
-        );
+    if (!checkbox || !wrapper) return;
 
-
-    const wrapper =
-        document.getElementById(
-            `wrap_illust_${prefix}`
-        );
-
-
-    if (
-        !checkbox ||
-        !wrapper
-    ) {
-
-        return;
-
-    }
-
-
-    wrapper.style.display =
-        checkbox.checked
-            ? "block"
-            : "none";
-
-
+    wrapper.style.display = checkbox.checked ? "block" : "none";
     calcTotal();
-
 }
 
-
-// ============================================================
-// イラストの絵柄・範囲表示
-// ============================================================
-
 function updateIllust(prefix) {
+    const eshi2 = document.querySelector(`input[name="eshi_${prefix}"][value="2"]`);
+    const eshiArea = document.getElementById(`eshi2_area_${prefix}`);
 
-    const eshi2 =
-        document.querySelector(
-            `input[name="eshi_${prefix}"][value="2"]`
-        );
+    if (!eshi2 || !eshiArea) return;
 
-
-    const eshiArea =
-        document.getElementById(
-            `eshi2_area_${prefix}`
-        );
-
-
-    if (
-        !eshi2 ||
-        !eshiArea
-    ) {
-
-        return;
-
-    }
-
-
-    eshiArea.style.display =
-        eshi2.checked
-            ? "block"
-            : "none";
-
+    eshiArea.style.display = eshi2.checked ? "block" : "none";
 
     if (!eshi2.checked) {
-
         calcTotal();
-
         return;
-
     }
 
-
-    const style =
-        document.querySelector(
-            `input[name="style_${prefix}"]:checked`
-        );
-
+    const style = document.querySelector(`input[name="style_${prefix}"]:checked`);
 
     if (!style) {
-
         calcTotal();
-
         return;
-
     }
 
-
-    const rangeArea =
-        document.getElementById(
-            `range_area_${prefix}`
-        );
-
-
-    if (rangeArea) {
-
-        rangeArea.style.display =
-            "block";
-
-    }
-
-
-    const faceLabel =
-        document.getElementById(
-            `lbl_face_${prefix}`
-        );
-
-
-    const chestLabel =
-        document.getElementById(
-            `lbl_chest_${prefix}`
-        );
-
-
-    const kneeLabel =
-        document.getElementById(
-            `lbl_knee_${prefix}`
-        );
-
-
-    const fullLabel =
-        document.getElementById(
-            `lbl_full_${prefix}`
-        );
-
+    const rangeArea = document.getElementById(`range_area_${prefix}`);
+    if (rangeArea) rangeArea.style.display = "block";
 
     const labels = {
-        face: faceLabel,
-        chest: chestLabel,
-        knee: kneeLabel,
-        full: fullLabel
+        face: document.getElementById(`lbl_face_${prefix}`),
+        chest: document.getElementById(`lbl_chest_${prefix}`),
+        knee: document.getElementById(`lbl_knee_${prefix}`),
+        full: document.getElementById(`lbl_full_${prefix}`)
     };
 
-
-    // --------------------------------------------------------
-    // 一旦すべて非表示
-    // --------------------------------------------------------
-
-    Object.values(labels)
-        .forEach(label => {
-
-            if (label) {
-
-                label.style.display =
-                    "none";
-
-            }
-
-        });
-
+    Object.values(labels).forEach(label => {
+        if (label) label.style.display = "none";
+    });
 
     let prices = {};
 
-
-    // --------------------------------------------------------
-    // 通常
-    // --------------------------------------------------------
-
-    if (
-        style.value === "normal"
-    ) {
-
-        prices = {
-            chest: 1500,
-            knee: 2500,
-            full: 5000
-        };
-
+    if (style.value === "normal") {
+        prices = { chest: 1500, knee: 2500, full: 5000 };
+    } else if (style.value === "simple") {
+        prices = { chest: 1000, knee: 2000, full: 4000 };
+    } else if (style.value === "deform") {
+        prices = { face: 500, full: 2000 };
     }
 
+    Object.entries(prices).forEach(([range, price]) => {
+        const label = labels[range];
+        if (label) label.style.display = "inline";
 
-    // --------------------------------------------------------
-    // 簡易
-    // --------------------------------------------------------
+        const priceElement = document.getElementById(`price_${range}_${prefix}`);
+        if (priceElement) priceElement.textContent = `${price.toLocaleString()}円`;
+    });
 
-    else if (
-        style.value === "simple"
-    ) {
+    Object.entries(labels).forEach(([range, label]) => {
+        if (!label) return;
 
-        prices = {
-            chest: 1000,
-            knee: 2000,
-            full: 4000
-        };
-
-    }
-
-
-    // --------------------------------------------------------
-    // デフォルメ
-    // --------------------------------------------------------
-
-    else if (
-        style.value === "deform"
-    ) {
-
-        prices = {
-            face: 500,
-            full: 2000
-        };
-
-    }
-
-
-    // --------------------------------------------------------
-    // 必要な範囲だけ表示
-    // --------------------------------------------------------
-
-    Object.entries(prices)
-        .forEach(
-            ([range, price]) => {
-
-                const label =
-                    labels[range];
-
-
-                if (label) {
-
-                    label.style.display =
-                        "inline";
-
-                }
-
-
-                const priceElement =
-                    document.getElementById(
-                        `price_${range}_${prefix}`
-                    );
-
-
-                if (priceElement) {
-
-                    priceElement.textContent =
-                        `${price.toLocaleString()}円`;
-
-                }
-
-            }
-        );
-
-
-    // --------------------------------------------------------
-    // 非表示になった選択肢のチェックを解除
-    // --------------------------------------------------------
-
-    Object.entries(labels)
-        .forEach(
-            ([range, label]) => {
-
-                if (!label) {
-
-                    return;
-
-                }
-
-
-                if (
-                    !Object.prototype.hasOwnProperty.call(
-                        prices,
-                        range
-                    )
-                ) {
-
-                    const input =
-                        label.querySelector(
-                            "input"
-                        );
-
-
-                    if (input) {
-
-                        input.checked =
-                            false;
-
-                    }
-
-                }
-
-            }
-        );
-
+        if (!Object.prototype.hasOwnProperty.call(prices, range)) {
+            const input = label.querySelector("input");
+            if (input) input.checked = false;
+        }
+    });
 
     calcTotal();
-
 }
-
-
-// ============================================================
-// イラスト料金を取得
-//
-// イラストには割引を適用しない
-// ============================================================
 
 function getIllustPrice(prefix) {
+    const wrapper = document.getElementById(`wrap_illust_${prefix}`);
+    if (!wrapper) return 0;
 
-    const wrapper =
-        document.getElementById(
-            `wrap_illust_${prefix}`
-        );
-
-
-    if (!wrapper) {
-
+    if (prefix !== "main" && prefix !== "set" && wrapper.style.display === "none") {
         return 0;
-
     }
 
+    const eshi = document.querySelector(`input[name="eshi_${prefix}"]:checked`);
+    const style = document.querySelector(`input[name="style_${prefix}"]:checked`);
+    const range = document.querySelector(`input[name="range_${prefix}"]:checked`);
 
-    // main以外は追加依頼チェックを確認
-    if (
-        prefix !== "main" &&
-        wrapper.style.display === "none"
-    ) {
+    if (!eshi || eshi.value !== "2" || !style || !range) return 0;
 
-        return 0;
-
-    }
-
-
-    const eshi =
-        document.querySelector(
-            `input[name="eshi_${prefix}"]:checked`
-        );
-
-
-    const style =
-        document.querySelector(
-            `input[name="style_${prefix}"]:checked`
-        );
-
-
-    const range =
-        document.querySelector(
-            `input[name="range_${prefix}"]:checked`
-        );
-
-
-    if (
-        !eshi ||
-        eshi.value !== "2" ||
-        !style ||
-        !range
-    ) {
-
-        return 0;
-
-    }
-
-
-    const priceTable = {
-
-        normal: {
-
-            chest: 1500,
-            knee: 2500,
-            full: 5000
-
-        },
-
-
-        simple: {
-
-            chest: 1000,
-            knee: 2000,
-            full: 4000
-
-        },
-
-
-        deform: {
-
-            face: 500,
-            full: 2000
-
-        }
-
+    const table = {
+        normal: { chest: 1500, knee: 2500, full: 5000 },
+        simple: { chest: 1000, knee: 2000, full: 4000 },
+        deform: { face: 500, full: 2000 }
     };
 
-
-    return (
-        priceTable[style.value]?.[
-            range.value
-        ] || 0
-    );
-
+    return table[style.value]?.[range.value] || 0;
 }
-
-
-// ============================================================
-// イラスト内容を文章化
-// ============================================================
 
 function getIllustDescription(prefix) {
+    const style = document.querySelector(`input[name="style_${prefix}"]:checked`);
+    const range = document.querySelector(`input[name="range_${prefix}"]:checked`);
 
-    const style =
-        document.querySelector(
-            `input[name="style_${prefix}"]:checked`
-        );
+    if (!style || !range) return "";
 
-
-    const range =
-        document.querySelector(
-            `input[name="range_${prefix}"]:checked`
-        );
+    return `絵師2 / ${style.dataset.label} / ${range.dataset.label}`;
+}
 
 
-    if (
-        !style ||
-        !range
-    ) {
+// ============================================================
+// MIX
+// ============================================================
 
-        return "";
+function calculateMix(isSet = false) {
+    const prefix = isSet ? "set_" : "";
+    const usersId = isSet ? "set_mix_users" : "mix_users";
+    const baseName = isSet ? "set_mix_base" : "mix_base";
+    const harmName = isSet ? "set_mix_harm" : "mix_harm";
+    const optionSelector = isSet ? ".set-mix-opt:checked" : ".mix-opt:checked";
+    const encodeId = isSet ? "set_opt_mix_encode" : "opt_mix_encode";
 
+    let discountable = 0;
+    const lines = [];
+
+    const base = document.querySelector(`input[name="${baseName}"]:checked`);
+
+    if (!base) {
+        return { discountable, illust: 0, lines };
     }
 
-
-    return (
-        `絵師2 / ` +
-        `${style.dataset.label} / ` +
-        `${range.dataset.label}`
+    const users = Math.max(
+        1,
+        parseInt(document.getElementById(usersId)?.value, 10) || 1
     );
 
-}
+    const basePrice = parseInt(base.value, 10);
+    discountable += basePrice * users;
+    lines.push(`・MIX基本料金: ${base.dataset.label} × ${users}人`);
 
+    const harm = document.querySelector(`input[name="${harmName}"]:checked`);
 
-// ============================================================
-// MIX料金計算
-// ============================================================
-
-function calculateMix() {
-
-    let price = 0;
-
-    const lines = [];
-
-
-    // --------------------------------------------------------
-    // 基本料金
-    // --------------------------------------------------------
-
-    const base =
-        document.querySelector(
-            'input[name="mix_base"]:checked'
-        );
-
-
-    if (base) {
-
-        const users =
-            Math.max(
-                1,
-                parseInt(
-                    document.getElementById(
-                        "mix_users"
-                    ).value,
-                    10
-                ) || 1
-            );
-
-
-        const basePrice =
-            parseInt(
-                base.value,
-                10
-            );
-
-
-        price +=
-            basePrice * users;
-
-
+    if (harm) {
+        const harmPrice = parseInt(harm.value, 10);
+        discountable += harmPrice;
         lines.push(
-            `・基本料金: ${base.dataset.label} × ${users}人`
+            harmPrice > 0
+                ? `・ハモリ: ${harm.dataset.label} (+${harmPrice.toLocaleString()}円)`
+                : `・ハモリ: ${harm.dataset.label}`
         );
-
-
-        // ----------------------------------------------------
-        // ハモリ
-        // ----------------------------------------------------
-
-        const harm =
-            document.querySelector(
-                'input[name="mix_harm"]:checked'
-            );
-
-
-        if (harm) {
-
-            const harmPrice =
-                parseInt(
-                    harm.value,
-                    10
-                );
-
-
-            price +=
-                harmPrice;
-
-
-            if (
-                harmPrice > 0
-            ) {
-
-                lines.push(
-                    `・ハモリ: ${harm.dataset.label} (+${harmPrice.toLocaleString()}円)`
-                );
-
-            } else {
-
-                lines.push(
-                    `・ハモリ: ${harm.dataset.label}`
-                );
-
-            }
-
-        }
-
-
-        // ----------------------------------------------------
-        // 通常オプション
-        // ----------------------------------------------------
-
-        document
-            .querySelectorAll(
-                ".mix-opt:checked"
-            )
-            .forEach(option => {
-
-                const optionPrice =
-                    parseInt(
-                        option.value,
-                        10
-                    );
-
-
-                price +=
-                    optionPrice;
-
-
-                lines.push(
-                    `・オプション: ${option.dataset.label} (+${optionPrice.toLocaleString()}円)`
-                );
-
-            });
-
-
-        // ----------------------------------------------------
-        // エンコード
-        //
-        // 各メニュー独立方式のため
-        // MIX単体では通常料金
-        // ----------------------------------------------------
-
-        const encode =
-            document.getElementById(
-                "opt_mix_encode"
-            );
-
-
-        if (
-            encode &&
-            encode.checked
-        ) {
-
-            const encodePrice =
-                parseInt(
-                    encode.value,
-                    10
-                );
-
-
-            price +=
-                encodePrice;
-
-
-            lines.push(
-                `・オプション: エンコード (+${encodePrice.toLocaleString()}円)`
-            );
-
-        }
-
     }
 
+    document.querySelectorAll(optionSelector).forEach(option => {
+        const price = parseInt(option.value, 10);
+        discountable += price;
+        lines.push(`・MIXオプション: ${option.dataset.label} (+${price.toLocaleString()}円)`);
+    });
 
-    return {
+    const encode = document.getElementById(encodeId);
+    if (encode?.checked) {
+        const price = parseInt(encode.value, 10);
+        discountable += price;
+        lines.push(
+            price === 0
+                ? "・MIXオプション: エンコード（MVセットのため無料）"
+                : `・MIXオプション: エンコード (+${price.toLocaleString()}円)`
+        );
+    }
 
-        discountable: price,
-
-        illust: 0,
-
-        lines
-
-    };
-
+    return { discountable, illust: 0, lines };
 }
 
 
 // ============================================================
-// MV料金計算
+// MV
 // ============================================================
 
-function calculateMv() {
+function calculateMv(isSet = false, includeIllust = false) {
+    const lengthName = isSet ? "set_mv_length" : "mv_length";
+    const configName = isSet ? "set_mv_config" : "mv_config";
+    const thumbId = isSet ? "set_opt_mv_thumb" : "opt_mv_thumb";
 
     let discountable = 0;
-
     let illust = 0;
-
     const lines = [];
 
-
-    // --------------------------------------------------------
-    // 動画尺
-    // --------------------------------------------------------
-
-    const length =
-        document.querySelector(
-            'input[name="mv_length"]:checked'
-        );
-
-
+    const length = document.querySelector(`input[name="${lengthName}"]:checked`);
     if (length) {
-
-        discountable +=
-            parseInt(
-                length.value,
-                10
-            );
-
-
-        lines.push(
-            `・動画尺: ${length.dataset.label}`
-        );
-
+        discountable += parseInt(length.value, 10);
+        lines.push(`・MV動画尺: ${length.dataset.label}`);
     }
 
-
-    // --------------------------------------------------------
-    // MV構成
-    // --------------------------------------------------------
-
-    const config =
-        document.querySelector(
-            'input[name="mv_config"]:checked'
-        );
-
-
+    const config = document.querySelector(`input[name="${configName}"]:checked`);
     if (config) {
-
-        discountable +=
-            parseInt(
-                config.value,
-                10
-            );
-
-
-        lines.push(
-            `・MV構成: ${config.dataset.label}`
-        );
-
+        discountable += parseInt(config.value, 10);
+        lines.push(`・MV構成: ${config.dataset.label}`);
     }
 
+    const thumb = document.getElementById(thumbId);
+    if (thumb?.checked) {
+        discountable += 500;
+        lines.push("・MVオプション: サムネイル (+500円)");
+    }
 
-    // --------------------------------------------------------
-    // イラスト追加
-    // --------------------------------------------------------
+    if (includeIllust) {
+        const prefix = isSet ? "set" : "mv";
+        illust = getIllustPrice(prefix);
 
-    const checkbox =
-        document.getElementById(
-            "chk_illust_mv"
-        );
-
-
-    if (
-        checkbox &&
-        checkbox.checked
-    ) {
-
-        illust =
-            getIllustPrice(
-                "mv"
-            );
-
-
-        if (
-            illust > 0
-        ) {
-
-            lines.push(
-                `・イラスト追加: ${getIllustDescription("mv")} (+${illust.toLocaleString()}円)`
-            );
-
+        if (illust > 0) {
+            lines.push(`・イラスト: ${getIllustDescription(prefix)} (+${illust.toLocaleString()}円)`);
         }
+    } else if (!isSet) {
+        const checkbox = document.getElementById("chk_illust_mv");
 
+        if (checkbox?.checked) {
+            illust = getIllustPrice("mv");
+
+            if (illust > 0) {
+                lines.push(`・イラスト追加: ${getIllustDescription("mv")} (+${illust.toLocaleString()}円)`);
+            }
+        }
     }
 
-
-    return {
-
-        discountable,
-
-        illust,
-
-        lines
-
-    };
-
+    return { discountable, illust, lines };
 }
 
 
 // ============================================================
-// 動画料金計算
+// 動画
 // ============================================================
 
-function calculateMovie() {
+function calculateMovie(isSet = false, includeIllust = false) {
+    const minId = isSet ? "set_movie_min" : "movie_min";
+    const secId = isSet ? "set_movie_sec" : "movie_sec";
+    const matId = isSet ? "set_movie_mat" : "movie_mat";
+    const cutName = isSet ? "set_movie_cut" : "movie_cut";
+    const thumbId = isSet ? "set_opt_movie_thumb" : "opt_movie_thumb";
 
     let discountable = 0;
-
     let illust = 0;
-
     const lines = [];
 
+    const minutes = parseInt(document.getElementById(minId)?.value, 10);
+    const seconds = parseInt(document.getElementById(secId)?.value, 10) || 0;
 
-    // --------------------------------------------------------
-    // 動画尺
-    // --------------------------------------------------------
+    if (!Number.isNaN(minutes)) {
+        let basePrice = 0;
 
-    const minuteElement =
-        document.getElementById(
-            "movie_min"
-        );
+        if (minutes < 3) basePrice = 1500;
+        else if (minutes < 8) basePrice = minutes * 400;
+        else if (minutes < 30) basePrice = minutes * 500;
+        else basePrice = minutes * 1000;
 
-
-    const secondElement =
-        document.getElementById(
-            "movie_sec"
-        );
-
-
-    const minutes =
-        parseInt(
-            minuteElement.value,
-            10
-        );
-
-
-    const seconds =
-        parseInt(
-            secondElement.value,
-            10
-        ) || 0;
-
-
-    if (
-        !Number.isNaN(
-            minutes
-        )
-    ) {
-
-        let movieBasePrice = 0;
-
-
-        // 3分未満
-        if (
-            minutes < 3
-        ) {
-
-            movieBasePrice =
-                1500;
-
-        }
-
-
-        // 3分以上8分未満
-        else if (
-            minutes < 8
-        ) {
-
-            movieBasePrice =
-                minutes * 400;
-
-        }
-
-
-        // 8分以上30分未満
-        else if (
-            minutes < 30
-        ) {
-
-            movieBasePrice =
-                minutes * 500;
-
-        }
-
-
-        // 30分以上
-        else {
-
-            movieBasePrice =
-                minutes * 1000;
-
-        }
-
-
-        discountable +=
-            movieBasePrice;
-
-
-        lines.push(
-            `・動画尺: ${minutes}分${seconds}秒`
-        );
-
+        discountable += basePrice;
+        lines.push(`・動画尺: ${minutes}分${seconds}秒`);
     }
 
-
-    // --------------------------------------------------------
-    // 素材数
-    // --------------------------------------------------------
-
-    const materialCount =
-        document.getElementById(
-            "movie_mat"
-        ).value;
-
-
-    if (materialCount) {
-
-        lines.push(
-            `・素材数: ${materialCount}`
-        );
-
+    const materials = document.getElementById(matId)?.value;
+    if (materials) {
+        lines.push(`・素材数: ${materials}`);
     }
 
-
-    // --------------------------------------------------------
-    // カット
-    // --------------------------------------------------------
-
-    const cut =
-        document.querySelector(
-            'input[name="movie_cut"]:checked'
-        );
-
-
+    const cut = document.querySelector(`input[name="${cutName}"]:checked`);
     if (cut) {
-
-        const cutPrice =
-            parseInt(
-                cut.value,
-                10
-            );
-
-
-        discountable +=
-            cutPrice;
-
-
-        lines.push(
-            `・カット: ${cut.dataset.label}`
-        );
-
+        discountable += parseInt(cut.value, 10);
+        lines.push(`・カット: ${cut.dataset.label}`);
     }
 
+    const thumb = document.getElementById(thumbId);
+    if (thumb?.checked) {
+        discountable += 500;
+        lines.push("・動画オプション: サムネイル (+500円)");
+    }
 
-    // --------------------------------------------------------
-    // イラスト追加
-    // --------------------------------------------------------
+    if (includeIllust) {
+        const prefix = isSet ? "set" : "movie";
+        illust = getIllustPrice(prefix);
 
-    const checkbox =
-        document.getElementById(
-            "chk_illust_movie"
-        );
-
-
-    if (
-        checkbox &&
-        checkbox.checked
-    ) {
-
-        illust =
-            getIllustPrice(
-                "movie"
-            );
-
-
-        if (
-            illust > 0
-        ) {
-
-            lines.push(
-                `・イラスト追加: ${getIllustDescription("movie")} (+${illust.toLocaleString()}円)`
-            );
-
+        if (illust > 0) {
+            lines.push(`・イラスト: ${getIllustDescription(prefix)} (+${illust.toLocaleString()}円)`);
         }
+    } else if (!isSet) {
+        const checkbox = document.getElementById("chk_illust_movie");
 
+        if (checkbox?.checked) {
+            illust = getIllustPrice("movie");
+
+            if (illust > 0) {
+                lines.push(`・イラスト追加: ${getIllustDescription("movie")} (+${illust.toLocaleString()}円)`);
+            }
+        }
     }
 
-
-    return {
-
-        discountable,
-
-        illust,
-
-        lines
-
-    };
-
+    return { discountable, illust, lines };
 }
 
 
 // ============================================================
-// サムネイル料金計算
+// イラスト単体
 // ============================================================
 
-function calculateThumb() {
+function calculateIllust(prefix = "main") {
+    const illust = getIllustPrice(prefix);
+    const lines = [];
 
+    if (illust > 0) {
+        lines.push(`・${getIllustDescription(prefix)}`);
+    }
+
+    return { discountable: 0, illust, lines };
+}
+
+
+// ============================================================
+// セット計算
+// ============================================================
+
+function calculateSet() {
+    const planKey = document.querySelector('input[name="set_plan"]:checked')?.value;
+
+    if (!planKey || !SET_INFO[planKey]) {
+        return {
+            finalTotal: 0,
+            lines: [],
+            planLabel: "",
+            minimum: 0,
+            setDiscount: 0,
+            adjustedToMinimum: false
+        };
+    }
+
+    const info = SET_INFO[planKey];
     let discountable = 0;
-
     let illust = 0;
-
     const lines = [];
 
-
-    // --------------------------------------------------------
-    // セット
-    // --------------------------------------------------------
-
-    const set =
-        document.querySelector(
-            'input[name="thumb_set"]:checked'
-        );
-
-
-    if (set) {
-
-        discountable +=
-            parseInt(
-                set.value,
-                10
-            );
-
-
-        lines.push(
-            `・セット: ${set.dataset.label}`
-        );
-
+    if (info.components.includes("mix")) {
+        const result = calculateMix(true);
+        discountable += result.discountable;
+        lines.push(...result.lines);
     }
 
+    if (info.components.includes("mv")) {
+        const result = calculateMv(true, false);
+        discountable += result.discountable;
+        lines.push(...result.lines);
+    }
 
-    // --------------------------------------------------------
-    // イラスト追加
-    // --------------------------------------------------------
+    if (info.components.includes("movie")) {
+        const result = calculateMovie(true, false);
+        discountable += result.discountable;
+        lines.push(...result.lines);
+    }
 
-    const checkbox =
-        document.getElementById(
-            "chk_illust_thumb"
-        );
-
-
-    if (
-        checkbox &&
-        checkbox.checked
-    ) {
-
-        illust =
-            getIllustPrice(
-                "thumb"
-            );
-
-
-        if (
-            illust > 0
-        ) {
-
-            lines.push(
-                `・イラスト追加: ${getIllustDescription("thumb")} (+${illust.toLocaleString()}円)`
-            );
-
+    if (info.components.includes("illust")) {
+        const result = calculateIllust("set");
+        illust += result.illust;
+        if (result.lines.length) {
+            lines.push(`・イラスト: ${getIllustDescription("set")} (+${illust.toLocaleString()}円)`);
         }
-
     }
 
+    // 学割・初回割引は通常サービス部分だけに適用
+    const rate = getDiscountRate();
+    const discountedService = Math.floor(discountable * rate);
+
+    // イラストを加えた、セット割引前の金額
+    const componentSubtotal = discountedService + illust;
+
+    // 最低注文額は学割・初回割引で変えない。
+    // 「最低注文額まで補正」→「固定セット割引」の順で計算する。
+    const baseForSetDiscount = Math.max(componentSubtotal, info.minimum);
+    const adjustedToMinimum = componentSubtotal < info.minimum;
+    const finalTotal = Math.max(0, baseForSetDiscount - info.discount);
 
     return {
-
-        discountable,
-
-        illust,
-
-        lines
-
+        finalTotal,
+        lines,
+        planLabel: info.label,
+        minimum: info.minimum,
+        setDiscount: info.discount,
+        componentSubtotal,
+        adjustedToMinimum
     };
-
 }
 
 
 // ============================================================
-// イラスト単体料金計算
-// ============================================================
-
-function calculateIllust() {
-
-    const illust =
-        getIllustPrice(
-            "main"
-        );
-
-
-    const lines = [];
-
-
-    if (
-        illust > 0
-    ) {
-
-        lines.push(
-            `・${getIllustDescription("main")}`
-        );
-
-    }
-
-
-    return {
-
-        discountable: 0,
-
-        illust,
-
-        lines
-
-    };
-
-}
-
-
-// ============================================================
-// 現在のタブだけを計算
+// メイン計算
 // ============================================================
 
 function calcTotal() {
-
     const currentTab = getCurrentTab();
-
     const rate = getDiscountRate();
 
     updatePriceTags();
 
-    let result = {
-        discountable: 0,
-        illust: 0,
-        lines: []
-    };
+    let finalTotal = 0;
+    let lines = [];
+    let extraMailLines = [];
 
+    if (currentTab === "set") {
+        const result = calculateSet();
+        finalTotal = result.finalTotal;
+        lines = result.lines;
 
-    switch (currentTab) {
+        if (result.planLabel) {
+            extraMailLines.push(`・セット: ${result.planLabel}`);
+            extraMailLines.push(`・最低注文額: ${result.minimum.toLocaleString()}円`);
+            extraMailLines.push(`・セット割引: -${result.setDiscount.toLocaleString()}円`);
 
-        case "mix":
-            result = calculateMix();
-            break;
+            if (result.adjustedToMinimum) {
+                extraMailLines.push(
+                    `・割引後の構成金額 ${result.componentSubtotal.toLocaleString()}円 が最低注文額未満のため、` +
+                    `${result.minimum.toLocaleString()}円を基準にセット割引を適用`
+                );
+            }
+        }
+    } else {
+        let result = { discountable: 0, illust: 0, lines: [] };
 
-        case "mv":
-            result = calculateMv();
-            break;
+        if (currentTab === "mix") {
+            result = calculateMix(false);
+        } else if (currentTab === "mv") {
+            result = calculateMv(false, false);
+        } else if (currentTab === "movie") {
+            result = calculateMovie(false, false);
+        } else if (currentTab === "illust") {
+            result = calculateIllust("main");
+        }
 
-        case "movie":
-            result = calculateMovie();
-            break;
-
-        case "thumb":
-            result = calculateThumb();
-            break;
-
-        case "illust":
-            result = calculateIllust();
-            break;
+        finalTotal = Math.floor(result.discountable * rate) + result.illust;
+        lines = result.lines;
     }
 
+    const info = TAB_INFO[currentTab];
 
-    // イラスト以外だけ割引
-    const discountedPrice = Math.floor(
-        result.discountable * rate
-    );
+    const title = document.getElementById("total-title");
+    if (title) title.textContent = `${info.title}のお見積り金額:`;
 
-    const finalTotal =
-        discountedPrice + result.illust;
+    const price = document.getElementById("display_price");
+    if (price) price.textContent = `${finalTotal.toLocaleString()} 円`;
 
-
-    document.getElementById(
-        "display_price"
-    ).textContent =
-        `${finalTotal.toLocaleString()} 円`;
-
-
-    updateSubmitButton(
-        currentTab,
-        finalTotal,
-        result.lines
-    );
+    updateSubmitButton(currentTab, finalTotal, lines, extraMailLines);
 }
 
 
 // ============================================================
-// メール送信ボタン
+// メール
 // ============================================================
 
-function updateSubmitButton(
-    currentTab,
-    finalTotal,
-    lines
-) {
-
-    const button =
-        document.getElementById(
-            "btn_submit"
-        );
-
-
-    if (!button) {
-
-        return;
-
-    }
-
+function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) {
+    const button = document.getElementById("btn_submit");
+    if (!button) return;
 
     button.onclick = () => {
+        const info = TAB_INFO[currentTab];
+        const isStudent = document.getElementById("chk_student")?.checked ?? false;
+        const isFirst = document.getElementById("chk_first")?.checked ?? false;
 
+        let body = "【お見積り依頼内容】\n\n";
+        body += `■ ${info.mailTitle}\n`;
 
-        const info =
-            TAB_INFO[currentTab];
+        if (extraMailLines.length) {
+            body += extraMailLines.join("\n") + "\n";
+        }
 
-
-        const student =
-            document.getElementById(
-                "chk_student"
-            );
-
-
-        const first =
-            document.getElementById(
-                "chk_first"
-            );
-
-
-        const isStudent =
-            student
-                ? student.checked
-                : false;
-
-
-        const isFirst =
-            first
-                ? first.checked
-                : false;
-
-
-        let textBody =
-            "【お見積り依頼内容】\n\n";
-
-
-        // ----------------------------------------------------
-        // 現在開いているメニューのみ
-        // ----------------------------------------------------
-
-        textBody +=
-            `■ ${info.mailTitle}\n`;
-
-
-        if (
-            lines.length > 0
-        ) {
-
-            textBody +=
-                lines.join("\n");
-
-            textBody +=
-                "\n";
-
+        if (lines.length) {
+            body += lines.join("\n") + "\n";
         } else {
-
-            textBody +=
-                "・未選択\n";
-
+            body += "・未選択\n";
         }
 
+        body += "\n■ 割引\n";
 
-        // ----------------------------------------------------
-        // 割引情報
-        // ----------------------------------------------------
-
-        textBody +=
-            "\n■ 割引\n";
-
-
-        if (
-            isStudent &&
-            isFirst
-        ) {
-
-            textBody +=
-                "・学生料金 50%OFF\n";
-
-            textBody +=
-                "・初回利用者 20%OFF\n";
-
-            textBody +=
-                "・同時適用：合計60%OFF\n";
-
+        if (isStudent && isFirst) {
+            body += "・学生料金 50%OFF\n";
+            body += "・初回利用者 20%OFF\n";
+            body += "・同時適用：合計60%OFF\n";
+        } else if (isStudent) {
+            body += "・学生料金 50%OFF\n";
+        } else if (isFirst) {
+            body += "・初回利用者 20%OFF\n";
+        } else {
+            body += "・なし\n";
         }
 
-
-        else if (
-            isStudent
-        ) {
-
-            textBody +=
-                "・学生料金 50%OFF\n";
-
+        if (currentTab === "set") {
+            body += "・セットの最低注文額とセット割引額には上記割引を適用しません。\n";
         }
 
-
-        else if (
-            isFirst
-        ) {
-
-            textBody +=
-                "・初回利用者 20%OFF\n";
-
-        }
-
-
-        else {
-
-            textBody +=
-                "・なし\n";
-
-        }
-
-
-        // ----------------------------------------------------
-        // 合計
-        // ----------------------------------------------------
-
-        textBody +=
-            "\n【お見積り合計金額】: " +
-            `${finalTotal.toLocaleString()} 円\n\n` +
+        body +=
+            `\n【お見積り合計金額】: ${finalTotal.toLocaleString()} 円\n\n` +
             "よろしくお願いいたします。";
 
-
-        // ----------------------------------------------------
-        // メール画面を開く
-        // ----------------------------------------------------
-
-        const subject =
-            "お見積り・依頼のご相談";
-
+        const subject = "お見積り・依頼のご相談";
 
         window.location.href =
             `mailto:?subject=${encodeURIComponent(subject)}` +
-            `&body=${encodeURIComponent(textBody)}`;
-
+            `&body=${encodeURIComponent(body)}`;
     };
-
 }
