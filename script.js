@@ -1,6 +1,6 @@
 // ============================================================
 // u29Qr（うにくる）お見積りサイト
-// script.js v6
+// script.js v7
 // ============================================================
 
 const TAB_INFO = {
@@ -709,6 +709,162 @@ function calcTotal() {
 }
 
 
+
+// ============================================================
+// 現在の見積り内容をデータ化
+// request.html への引き継ぎにも使用
+// ============================================================
+
+function captureEstimatorState(currentTab = getCurrentTab()) {
+    const state = [];
+
+    const targets = [
+        document.getElementById("chk_student"),
+        document.getElementById("chk_first")
+    ];
+
+    const section = document.getElementById(`sec_${currentTab}`);
+
+    if (section) {
+        section.querySelectorAll("input, select, textarea").forEach(element => {
+            targets.push(element);
+        });
+    }
+
+    targets.filter(Boolean).forEach(element => {
+        const item = {
+            tag: element.tagName.toLowerCase(),
+            type: element.type || "",
+            id: element.id || "",
+            name: element.name || ""
+        };
+
+        if (element.type === "radio" || element.type === "checkbox") {
+            item.optionValue = element.value;
+            item.checked = element.checked;
+        } else {
+            item.value = element.value;
+        }
+
+        state.push(item);
+    });
+
+    return state;
+}
+
+function restoreEstimatorState(state) {
+    if (!Array.isArray(state)) return;
+
+    state.forEach(item => {
+        let element = null;
+
+        if (item.id) {
+            element = document.getElementById(item.id);
+        }
+
+        if (!element && item.name) {
+            if (item.type === "radio" || item.type === "checkbox") {
+                const safeValue = CSS.escape(String(item.optionValue ?? ""));
+                element = document.querySelector(
+                    `input[name="${CSS.escape(item.name)}"][value="${safeValue}"]`
+                );
+            } else {
+                element = document.querySelector(`[name="${CSS.escape(item.name)}"]`);
+            }
+        }
+
+        if (!element) return;
+
+        if (item.type === "radio" || item.type === "checkbox") {
+            element.checked = Boolean(item.checked);
+        } else if ("value" in item) {
+            element.value = item.value;
+        }
+    });
+}
+
+function getCurrentEstimateData() {
+    const currentTab = getCurrentTab();
+    const info = TAB_INFO[currentTab];
+    const rate = getDiscountRate();
+
+    let finalTotal = 0;
+    let lines = [];
+    let extraLines = [];
+    let setData = null;
+
+    if (currentTab === "set") {
+        const result = calculateSet();
+
+        finalTotal = result.finalTotal;
+        lines = result.lines;
+
+        if (result.planLabel) {
+            extraLines.push(`・セット: ${result.planLabel}`);
+            extraLines.push(`・最低注文額: ${result.minimum.toLocaleString()}円`);
+            extraLines.push(`・セット割引: -${result.setDiscount.toLocaleString()}円`);
+
+            if (!result.meetsMinimum) {
+                extraLines.push(
+                    `・学割・初回割引適用後の注文額: ${result.beforeSetDiscount.toLocaleString()}円（最低注文額未満）`
+                );
+            }
+        }
+
+        const planKey =
+            document.querySelector('input[name="set_plan"]:checked')?.value || "";
+
+        setData = {
+            planKey,
+            planLabel: result.planLabel || "",
+            minimum: result.minimum || 0,
+            setDiscount: result.setDiscount || 0,
+            beforeSetDiscount: result.beforeSetDiscount || 0,
+            meetsMinimum: Boolean(result.meetsMinimum)
+        };
+    } else {
+        let result = {
+            discountable: 0,
+            illust: 0,
+            lines: []
+        };
+
+        if (currentTab === "mix") {
+            result = calculateMix(false);
+        } else if (currentTab === "mv") {
+            result = calculateMv(false, false);
+        } else if (currentTab === "movie") {
+            result = calculateMovie(false, false);
+        } else if (currentTab === "illust") {
+            result = calculateIllust("main");
+        }
+
+        finalTotal =
+            Math.floor(result.discountable * rate) +
+            result.illust;
+
+        lines = result.lines;
+    }
+
+    return {
+        version: 2,
+        savedAt: new Date().toISOString(),
+        tab: currentTab,
+        title: info?.title || "",
+        category: info?.mailTitle || "",
+        finalTotal,
+        lines: [...extraLines, ...lines],
+        discount: {
+            student: document.getElementById("chk_student")?.checked ?? false,
+            first: document.getElementById("chk_first")?.checked ?? false,
+            rate
+        },
+        set: setData,
+        formState: captureEstimatorState(currentTab)
+    };
+}
+
+
 // ============================================================
 // メール
 // ============================================================
@@ -718,38 +874,7 @@ function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) 
     if (!button) return;
 
     button.onclick = () => {
-        const info = TAB_INFO[currentTab];
-        const isStudent = document.getElementById("chk_student")?.checked ?? false;
-        const isFirst = document.getElementById("chk_first")?.checked ?? false;
-
-        const estimate = {
-            version: 1,
-            savedAt: new Date().toISOString(),
-            tab: currentTab,
-            title: info.title,
-            category: info.mailTitle,
-            finalTotal,
-            lines: [...extraMailLines, ...lines],
-            discount: {
-                student: isStudent,
-                first: isFirst,
-                rate: getDiscountRate()
-            }
-        };
-
-        if (currentTab === "set") {
-            const setResult = calculateSet();
-            const planKey = document.querySelector('input[name="set_plan"]:checked')?.value || "";
-
-            estimate.set = {
-                planKey,
-                planLabel: setResult.planLabel || "",
-                minimum: setResult.minimum || 0,
-                setDiscount: setResult.setDiscount || 0,
-                beforeSetDiscount: setResult.beforeSetDiscount || 0,
-                meetsMinimum: Boolean(setResult.meetsMinimum)
-            };
-        }
+        const estimate = getCurrentEstimateData();
 
         localStorage.setItem(
             "u29qr_current_estimate",
