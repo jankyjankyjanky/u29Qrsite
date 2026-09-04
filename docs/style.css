@@ -309,3 +309,34 @@ input[type="number"] {
         white-space: normal;
     }
 }
+
+
+/* 受付停止中 */
+.tab-label.is-closed {
+    border-color: #BDBDBD;
+    color: #757575;
+}
+
+.closed-badge {
+    display: inline-block;
+    margin-left: 6px;
+    padding: 2px 5px;
+    border-radius: 10px;
+    background: #EEEEEE;
+    color: #757575;
+    font-size: 0.68rem;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.request-page .tab-radio:disabled + .tab-label {
+    cursor: not-allowed;
+    opacity: 0.62;
+    background: #F5F5F5;
+}
+
+.btn-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.65;
+    transform: none;
+}

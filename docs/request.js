@@ -467,6 +467,17 @@ function setupFinalSubmit() {
             return;
         }
 
+        if (
+            typeof SERVICE_AVAILABILITY !== "undefined" &&
+            SERVICE_AVAILABILITY[confirmedRequestData?.estimate?.tab] === false
+        ) {
+            setSubmitStatus(
+                "error",
+                "現在、この依頼は受付停止中です。別の依頼内容を選択してください。"
+            );
+            return;
+        }
+
         button.disabled = true;
         button.textContent = "送信中...";
         setSubmitStatus("loading", "依頼を送信しています。");

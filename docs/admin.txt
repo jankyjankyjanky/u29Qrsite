@@ -1,0 +1,445 @@
+const API_BASE = "https://worker.nazuna-request.workers.dev";
+const TOKEN_KEY = "nazuna_admin_token";
+
+const SERVICE_LABELS = {
+    mix: "MIX",
+    mv: "MV",
+    movie: "動画編集",
+    illust: "イラスト",
+    set: "セット"
+};
+
+const STATUS_LABELS = {
+    new: "新規",
+    checked: "確認済み",
+    in_progress: "制作中",
+    completed: "完了",
+    cancelled: "キャンセル"
+};
+
+let adminToken = sessionStorage.getItem(TOKEN_KEY) || "";
+let allRequests = [];
+
+window.addEventListener("DOMContentLoaded", () => {
+    setupEvents();
+
+    if (adminToken) {
+        showAdmin();
+        refreshAll();
+    }
+});
+
+function setupEvents() {
+    document.getElementById("admin_login").addEventListener("click", login);
+    document.getElementById("admin_logout").addEventListener("click", logout);
+    document.getElementById("refresh_admin").addEventListener("click", refreshAll);
+
+    document.getElementById("request_filter").addEventListener("change", renderRequestList);
+
+    document.querySelectorAll("[data-close-detail]").forEach(element => {
+        element.addEventListener("click", closeDetail);
+    });
+
+    document.getElementById("admin_token").addEventListener("keydown", event => {
+        if (event.key === "Enter") login();
+    });
+}
+
+async function login() {
+    const input = document.getElementById("admin_token");
+    const value = input.value.trim();
+
+    if (!value) return;
+
+    adminToken = value;
+
+    try {
+        await adminFetch("/api/admin/settings");
+        sessionStorage.setItem(TOKEN_KEY, adminToken);
+        document.getElementById("login_error").hidden = true;
+        showAdmin();
+        refreshAll();
+    } catch (error) {
+        adminToken = "";
+        sessionStorage.removeItem(TOKEN_KEY);
+
+        const box = document.getElementById("login_error");
+        box.hidden = false;
+        box.textContent = "管理者キーが正しくないか、APIへ接続できませんでした。";
+    }
+}
+
+function logout() {
+    adminToken = "";
+    sessionStorage.removeItem(TOKEN_KEY);
+    document.getElementById("admin_app").hidden = true;
+    document.getElementById("login_panel").hidden = false;
+    document.getElementById("admin_token").value = "";
+}
+
+function showAdmin() {
+    document.getElementById("login_panel").hidden = true;
+    document.getElementById("admin_app").hidden = false;
+}
+
+async function refreshAll() {
+    try {
+        await Promise.all([
+            loadSettings(),
+            loadRequests()
+        ]);
+
+        document.getElementById("last_refresh").textContent =
+            `最終更新: ${new Date().toLocaleString("ja-JP")}`;
+    } catch (error) {
+        console.error(error);
+
+        if (error?.status === 401) {
+            logout();
+            alert("管理者キーの有効性を確認してください。");
+        }
+    }
+}
+
+async function loadSettings() {
+    const data = await adminFetch("/api/admin/settings");
+    renderSettings(data.settings || {});
+}
+
+function renderSettings(settings) {
+    const wrap = document.getElementById("service_settings");
+    wrap.innerHTML = "";
+
+    Object.entries(SERVICE_LABELS).forEach(([key, label]) => {
+        const accepting = settings[key] !== false;
+
+        const box = document.createElement("div");
+        box.className = "service-setting";
+
+        const title = document.createElement("strong");
+        title.textContent = label;
+
+        const button = document.createElement("button");
+        button.type = "button";
+        button.className =
+            `service-toggle ${accepting ? "accepting" : "closed"}`;
+        button.textContent =
+            accepting ? "受付中" : "受付停止中";
+
+        button.addEventListener("click", async () => {
+            button.disabled = true;
+
+            try {
+                await adminFetch(
+                    `/api/admin/settings/${key}`,
+                    {
+                        method: "PUT",
+                        body: JSON.stringify({
+                            accepting: !accepting
+                        })
+                    }
+                );
+
+                await loadSettings();
+            } finally {
+                button.disabled = false;
+            }
+        });
+
+        box.append(title, button);
+        wrap.appendChild(box);
+    });
+}
+
+async function loadRequests() {
+    const data = await adminFetch("/api/admin/requests?limit=100");
+    allRequests = Array.isArray(data.requests) ? data.requests : [];
+    renderRequestList();
+}
+
+function renderRequestList() {
+    const wrap = document.getElementById("request_list");
+    const filter = document.getElementById("request_filter").value;
+
+    const items = filter
+        ? allRequests.filter(item => item.status === filter)
+        : allRequests;
+
+    wrap.innerHTML = "";
+
+    if (!items.length) {
+        wrap.innerHTML =
+            '<div class="empty-state">該当する依頼はありません。</div>';
+        return;
+    }
+
+    items.forEach(item => {
+        const row = document.createElement("div");
+        row.className = "request-row";
+        row.tabIndex = 0;
+
+        row.innerHTML = `
+            <div class="request-row-id">${escapeHtml(item.request_id || "―")}</div>
+
+            <div class="request-row-main">
+                <strong>${escapeHtml(item.activity_name || "名称なし")}</strong>
+                <span>${escapeHtml(item.estimate_category || "")}</span>
+            </div>
+
+            <div>
+                <span class="status-badge">
+                    ${escapeHtml(STATUS_LABELS[item.status] || item.status || "新規")}
+                </span>
+            </div>
+
+            <div class="request-row-price">
+                ${Number(item.estimate_total || 0).toLocaleString()}円
+            </div>
+
+            <div class="request-row-date">
+                ${formatDate(item.created_at)}
+            </div>
+        `;
+
+        row.addEventListener("click", () => openDetail(item.request_id));
+        row.addEventListener("keydown", event => {
+            if (event.key === "Enter") openDetail(item.request_id);
+        });
+
+        wrap.appendChild(row);
+    });
+}
+
+async function openDetail(requestId) {
+    const modal = document.getElementById("detail_modal");
+    const content = document.getElementById("detail_content");
+
+    modal.hidden = false;
+    content.innerHTML = '<p>読み込み中...</p>';
+
+    try {
+        const data = await adminFetch(
+            `/api/admin/requests/${encodeURIComponent(requestId)}`
+        );
+
+        renderDetail(data.request);
+    } catch (error) {
+        content.innerHTML =
+            '<div class="admin-message error">詳細の読み込みに失敗しました。</div>';
+    }
+}
+
+function closeDetail() {
+    document.getElementById("detail_modal").hidden = true;
+}
+
+function renderDetail(item) {
+    const content = document.getElementById("detail_content");
+
+    let original = {};
+
+    try {
+        original = JSON.parse(item.request_json || "{}");
+    } catch (error) {
+        console.warn(error);
+    }
+
+    const applicant = original.applicant || {};
+    const estimate = original.estimate || {};
+
+    const lines = Array.isArray(estimate.lines)
+        ? estimate.lines
+        : [];
+
+    const setText =
+        estimate.set?.planLabel
+            ? `<dt>セット</dt><dd>${escapeHtml(estimate.set.planLabel)}</dd>`
+            : "";
+
+    content.innerHTML = `
+        <div class="detail-heading">
+            <h2>${escapeHtml(item.request_id || "依頼詳細")}</h2>
+            <span class="desc">
+                ${escapeHtml(item.activity_name || "")} /
+                ${escapeHtml(item.estimate_category || "")}
+            </span>
+        </div>
+
+        <div class="detail-status-row">
+            <strong>進行状況</strong>
+            <select id="detail_status">
+                ${Object.entries(STATUS_LABELS)
+                    .map(([key, label]) => `
+                        <option value="${key}" ${item.status === key ? "selected" : ""}>
+                            ${label}
+                        </option>
+                    `)
+                    .join("")}
+            </select>
+            <button type="button" class="secondary-button" id="save_status">
+                保存
+            </button>
+        </div>
+
+        <div class="detail-section">
+            <h3>依頼情報</h3>
+            <dl class="detail-grid">
+                <dt>依頼番号</dt>
+                <dd>${escapeHtml(item.request_id || "")}</dd>
+
+                <dt>依頼区分</dt>
+                <dd>${escapeHtml(item.estimate_category || "")}</dd>
+
+                ${setText}
+
+                <dt>見積り金額</dt>
+                <dd><strong>${Number(item.estimate_total || 0).toLocaleString()}円</strong></dd>
+
+                <dt>受付日時</dt>
+                <dd>${formatDateTime(item.created_at)}</dd>
+
+                <dt>Discord通知</dt>
+                <dd>${item.discord_notified ? "送信済み" : "未送信"}</dd>
+            </dl>
+        </div>
+
+        <div class="detail-section">
+            <h3>依頼内容の詳細</h3>
+            <ul class="detail-lines">
+                ${lines.length
+                    ? lines.map(line => `<li>${escapeHtml(String(line).replace(/^・/, ""))}</li>`).join("")
+                    : "<li>詳細項目なし</li>"}
+            </ul>
+        </div>
+
+        <div class="detail-section">
+            <h3>依頼者情報</h3>
+            <dl class="detail-grid">
+                <dt>活動名 / お名前</dt>
+                <dd>${escapeHtml(applicant.activityName || item.activity_name || "")}</dd>
+
+                <dt>連絡方法</dt>
+                <dd>${escapeHtml(contactLabel(applicant.contactMethod || item.contact_method))}</dd>
+
+                <dt>連絡先</dt>
+                <dd>${escapeHtml(applicant.contactValue || item.contact_value || "")}</dd>
+
+                <dt>希望納期</dt>
+                <dd>${escapeHtml(applicant.deadline || item.deadline || "指定なし")}</dd>
+
+                <dt>公開予定日</dt>
+                <dd>${escapeHtml(applicant.publicDate || item.public_date || "指定なし")}</dd>
+
+                <dt>素材URL</dt>
+                <dd>${linkOrText(applicant.materialsUrl || item.materials_url)}</dd>
+
+                <dt>参考URL</dt>
+                <dd>${linkOrText(applicant.referenceUrl || item.reference_url)}</dd>
+            </dl>
+        </div>
+
+        <div class="detail-section">
+            <h3>ご要望・補足</h3>
+            <div class="detail-notes">
+                ${escapeHtml(applicant.notes || item.notes || "なし")}
+            </div>
+        </div>
+    `;
+
+    document.getElementById("save_status").addEventListener("click", async () => {
+        const status = document.getElementById("detail_status").value;
+
+        await adminFetch(
+            `/api/admin/requests/${encodeURIComponent(item.request_id)}/status`,
+            {
+                method: "PATCH",
+                body: JSON.stringify({ status })
+            }
+        );
+
+        await loadRequests();
+        await openDetail(item.request_id);
+    });
+}
+
+async function adminFetch(path, options = {}) {
+    const response = await fetch(
+        API_BASE + path,
+        {
+            ...options,
+            headers: {
+                "Content-Type": "application/json",
+                "Authorization": `Bearer ${adminToken}`,
+                ...(options.headers || {})
+            },
+            cache: "no-store"
+        }
+    );
+
+    const data = await response.json().catch(() => ({}));
+
+    if (!response.ok) {
+        const error = new Error(
+            data?.error || `HTTP ${response.status}`
+        );
+
+        error.status = response.status;
+        throw error;
+    }
+
+    return data;
+}
+
+function formatDate(value) {
+    if (!value) return "";
+
+    const date = new Date(
+        value.includes("T") ? value : value.replace(" ", "T") + "Z"
+    );
+
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleDateString("ja-JP");
+}
+
+function formatDateTime(value) {
+    if (!value) return "";
+
+    const date = new Date(
+        value.includes("T") ? value : value.replace(" ", "T") + "Z"
+    );
+
+    if (Number.isNaN(date.getTime())) return value;
+
+    return date.toLocaleString("ja-JP");
+}
+
+function contactLabel(value) {
+    return {
+        discord: "Discord",
+        x: "X（Twitter）",
+        email: "メール",
+        other: "その他"
+    }[value] || value || "";
+}
+
+function linkOrText(value) {
+    if (!value) return "未入力";
+
+    const safe = escapeHtml(value);
+
+    if (/^https?:\/\//i.test(value)) {
+        return `<a href="${safe}" target="_blank" rel="noopener noreferrer">${safe}</a>`;
+    }
+
+    return safe;
+}
+
+function escapeHtml(value) {
+    return String(value ?? "")
+        .replace(/&/g, "&amp;")
+        .replace(/</g, "&lt;")
+        .replace(/>/g, "&gt;")
+        .replace(/"/g, "&quot;")
+        .replace(/'/g, "&#039;");
+}

@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="robots" content="noindex,nofollow">
+    <title>なずな 依頼管理</title>
+    <link rel="stylesheet" href="style.css?v=12">
+    <link rel="stylesheet" href="admin.css?v=1">
+</head>
+<body class="admin-page">
+
+<header>
+    <h1>なずな 依頼管理</h1>
+</header>
+
+<main class="admin-container">
+
+    <section id="login_panel" class="admin-card login-card">
+        <h2>管理者ログイン</h2>
+        <span class="desc">
+            Cloudflare Workerに登録した管理者キーを入力してください。
+            キーはこのブラウザのタブを閉じるまでだけ保持されます。
+        </span>
+
+        <div class="admin-field">
+            <label for="admin_token"><strong>管理者キー</strong></label>
+            <input type="password" id="admin_token" autocomplete="current-password">
+        </div>
+
+        <div id="login_error" class="admin-message error" hidden></div>
+
+        <button type="button" class="btn-submit" id="admin_login">
+            ログイン
+        </button>
+    </section>
+
+
+    <div id="admin_app" hidden>
+
+        <div class="admin-toolbar">
+            <div>
+                <strong>管理画面</strong>
+                <span id="last_refresh" class="desc"></span>
+            </div>
+
+            <div class="admin-toolbar-actions">
+                <button type="button" class="secondary-button" id="refresh_admin">
+                    更新
+                </button>
+                <button type="button" class="secondary-button" id="admin_logout">
+                    ログアウト
+                </button>
+            </div>
+        </div>
+
+        <section class="admin-card">
+            <h2>依頼受付設定</h2>
+            <span class="desc">
+                各依頼の受付状態を変更できます。受付停止中にすると、依頼フォームから選択できなくなり、API側でも新規依頼を拒否します。
+            </span>
+
+            <div id="service_settings" class="service-settings"></div>
+        </section>
+
+        <section class="admin-card">
+            <div class="admin-card-title-row">
+                <div>
+                    <h2>依頼一覧</h2>
+                    <span class="desc">新しい依頼から順に表示します。</span>
+                </div>
+
+                <select id="request_filter">
+                    <option value="">すべて</option>
+                    <option value="new">新規</option>
+                    <option value="checked">確認済み</option>
+                    <option value="in_progress">制作中</option>
+                    <option value="completed">完了</option>
+                    <option value="cancelled">キャンセル</option>
+                </select>
+            </div>
+
+            <div id="request_list" class="request-list"></div>
+        </section>
+
+    </div>
+
+</main>
+
+<div id="detail_modal" class="detail-modal" hidden>
+    <div class="detail-backdrop" data-close-detail></div>
+
+    <section class="detail-panel">
+        <button type="button" class="detail-close" data-close-detail aria-label="閉じる">×</button>
+        <div id="detail_content"></div>
+    </section>
+</div>
+
+<script src="admin.js?v=1"></script>
+</body>
+</html>

@@ -38,6 +38,105 @@ const SET_INFO = {
     }
 };
 
+
+// ============================================================
+// 受付状況
+// ============================================================
+
+const NAZUNA_API_BASE = "https://worker.nazuna-request.workers.dev";
+
+let SERVICE_AVAILABILITY = {
+    mix: true,
+    mv: true,
+    movie: true,
+    illust: true,
+    set: true
+};
+
+async function loadServiceAvailability() {
+    try {
+        const response = await fetch(
+            `${NAZUNA_API_BASE}/api/public/settings`,
+            { cache: "no-store" }
+        );
+
+        if (!response.ok) return;
+
+        const data = await response.json();
+
+        if (data?.settings) {
+            SERVICE_AVAILABILITY = {
+                ...SERVICE_AVAILABILITY,
+                ...data.settings
+            };
+        }
+
+        applyServiceAvailability();
+    } catch (error) {
+        console.warn("受付状況を取得できませんでした。", error);
+    }
+}
+
+function applyServiceAvailability() {
+    const isRequestPage =
+        Boolean(document.getElementById("request_form"));
+
+    Object.entries(SERVICE_AVAILABILITY).forEach(([key, accepting]) => {
+        const radio = document.querySelector(
+            `input[name="main_tab"][value="${key}"]`
+        );
+
+        if (!radio) return;
+
+        const label = document.querySelector(
+            `label[for="${radio.id}"]`
+        );
+
+        if (!label) return;
+
+        label.classList.toggle("is-closed", !accepting);
+
+        let badge = label.querySelector(".closed-badge");
+
+        if (!accepting) {
+            if (!badge) {
+                badge = document.createElement("span");
+                badge.className = "closed-badge";
+                badge.textContent = "受付停止中";
+                label.appendChild(badge);
+            }
+
+            if (isRequestPage) {
+                radio.disabled = true;
+            }
+        } else {
+            if (badge) badge.remove();
+            radio.disabled = false;
+        }
+    });
+
+    if (isRequestPage) {
+        const current = getCurrentTab();
+
+        if (!SERVICE_AVAILABILITY[current]) {
+            const firstOpen = document.querySelector(
+                'input[name="main_tab"]:not(:disabled)'
+            );
+
+            if (firstOpen) {
+                firstOpen.checked = true;
+                switchTab();
+            }
+        }
+    }
+
+    calcTotal();
+}
+
+function isCurrentServiceAccepting() {
+    return SERVICE_AVAILABILITY[getCurrentTab()] !== false;
+}
+
 window.addEventListener("DOMContentLoaded", () => {
     // イラストフォームを各場所へ展開
     const templateElement = document.getElementById("tmpl_illust");
@@ -66,6 +165,7 @@ window.addEventListener("DOMContentLoaded", () => {
     updateSetPanels();
     updatePriceTags();
     calcTotal();
+    loadServiceAvailability();
 });
 
 
@@ -838,6 +938,16 @@ function getCurrentEstimateData() {
 function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) {
     const button = document.getElementById("btn_submit");
     if (!button) return;
+
+    if (SERVICE_AVAILABILITY[currentTab] === false) {
+        button.disabled = true;
+        button.textContent = "受付停止中";
+        button.onclick = null;
+        return;
+    }
+
+    button.disabled = false;
+    button.textContent = "依頼してみる！";
 
     button.onclick = () => {
         const estimate = getCurrentEstimateData();

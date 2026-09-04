@@ -14,12 +14,5 @@ window.addEventListener("DOMContentLoaded", () => {
     }
 
     const requestId = queryId || saved?.requestId || "―";
-
     document.getElementById("request_id").textContent = requestId;
-
-    const note = document.getElementById("discord_note");
-
-    if (saved?.discordNotified) {
-        note.hidden = false;
-    }
 });
