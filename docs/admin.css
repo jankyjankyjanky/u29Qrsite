@@ -371,3 +371,24 @@ body.admin-page {
         margin-bottom: 8px;
     }
 }
+
+
+.dependency-guide {
+    margin-top: 16px;
+    padding: 12px 14px;
+    background: #FFF8E1;
+    border-left: 4px solid #FFCA28;
+    border-radius: 7px;
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.dependency-guide strong,
+.dependency-guide span {
+    display: block;
+}
+
+.dependency-guide strong {
+    margin-bottom: 4px;
+    color: #5D4037;
+}

@@ -58,9 +58,19 @@
             <h2>依頼受付設定</h2>
             <span class="desc">
                 各依頼の受付状態を変更できます。受付停止中にすると、依頼フォームから選択できなくなり、API側でも新規依頼を拒否します。
+                また、そのサービスを含むセット料金も自動的に受付停止になります。
             </span>
 
             <div id="service_settings" class="service-settings"></div>
+
+            <div class="dependency-guide">
+                <strong>セット料金との連動</strong>
+                <span>MIX停止 → MIX+MV / MIX+MV+イラスト が停止</span>
+                <span>MV停止 → MIX+MV / MV+イラスト / MIX+MV+イラスト が停止</span>
+                <span>動画編集停止 → 動画+イラスト が停止</span>
+                <span>イラスト停止 → MV+イラスト / 動画+イラスト / MIX+MV+イラスト が停止</span>
+                <span>セット停止 → すべてのセット料金が停止</span>
+            </div>
         </section>
 
         <section class="admin-card">

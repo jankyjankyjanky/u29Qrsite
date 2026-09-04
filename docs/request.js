@@ -468,12 +468,12 @@ function setupFinalSubmit() {
         }
 
         if (
-            typeof SERVICE_AVAILABILITY !== "undefined" &&
-            SERVICE_AVAILABILITY[confirmedRequestData?.estimate?.tab] === false
+            typeof isEstimateAccepting === "function" &&
+            !isEstimateAccepting(confirmedRequestData?.estimate)
         ) {
             setSubmitStatus(
                 "error",
-                "現在、この依頼は受付停止中です。別の依頼内容を選択してください。"
+                "現在、この依頼またはセットに含まれるサービスが受付停止中です。別の依頼内容を選択してください。"
             );
             return;
         }

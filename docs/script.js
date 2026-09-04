@@ -53,6 +53,133 @@ let SERVICE_AVAILABILITY = {
     set: true
 };
 
+
+const SET_PLAN_REQUIREMENTS = {
+    mix_mv: ["mix", "mv"],
+    mv_illust: ["mv", "illust"],
+    movie_illust: ["movie", "illust"],
+    mix_mv_illust: ["mix", "mv", "illust"]
+};
+
+const SET_PLAN_LABELS = {
+    mix_mv: "MIX + MVセット",
+    mv_illust: "MV + イラストセット",
+    movie_illust: "動画 + イラストセット",
+    mix_mv_illust: "MIX + MV + イラストセット"
+};
+
+function isSetPlanAccepting(planKey) {
+    if (SERVICE_AVAILABILITY.set === false) {
+        return false;
+    }
+
+    const requirements = SET_PLAN_REQUIREMENTS[planKey];
+
+    if (!requirements) {
+        return false;
+    }
+
+    return requirements.every(
+        serviceKey => SERVICE_AVAILABILITY[serviceKey] !== false
+    );
+}
+
+function getSelectedSetPlanKey() {
+    return document.querySelector(
+        'input[name="set_plan"]:checked'
+    )?.value || "";
+}
+
+function isEstimateAccepting(estimate = null) {
+    const tab = estimate?.tab || getCurrentTab();
+
+    if (SERVICE_AVAILABILITY[tab] === false) {
+        return false;
+    }
+
+    if (tab !== "set") {
+        return true;
+    }
+
+    const planKey =
+        estimate?.set?.planKey ||
+        getSelectedSetPlanKey();
+
+    if (!planKey) {
+        return SERVICE_AVAILABILITY.set !== false;
+    }
+
+    return isSetPlanAccepting(planKey);
+}
+
+function applySetPlanAvailability() {
+    const isRequestPage =
+        Boolean(document.getElementById("request_form"));
+
+    document.querySelectorAll(
+        'input[name="set_plan"]'
+    ).forEach(radio => {
+        const planKey = radio.value;
+        const accepting = isSetPlanAccepting(planKey);
+
+        const label = radio.closest("label");
+
+        if (!label) return;
+
+        label.classList.toggle(
+            "is-set-plan-closed",
+            !accepting
+        );
+
+        let badge =
+            label.querySelector(".set-plan-closed-badge");
+
+        if (!accepting) {
+            if (!badge) {
+                badge =
+                    document.createElement("span");
+
+                badge.className =
+                    "set-plan-closed-badge";
+
+                badge.textContent =
+                    "受付停止中";
+
+                label.appendChild(badge);
+            }
+
+            if (isRequestPage) {
+                radio.disabled = true;
+
+                if (radio.checked) {
+                    radio.checked = false;
+                }
+            }
+        } else {
+            if (badge) {
+                badge.remove();
+            }
+
+            radio.disabled = false;
+        }
+    });
+
+    if (
+        isRequestPage &&
+        getCurrentTab() === "set"
+    ) {
+        const selected =
+            document.querySelector(
+                'input[name="set_plan"]:checked'
+            );
+
+        if (!selected) {
+            hideSetPanels();
+        }
+    }
+}
+
+
 async function loadServiceAvailability() {
     try {
         const response = await fetch(
@@ -130,11 +257,12 @@ function applyServiceAvailability() {
         }
     }
 
+    applySetPlanAvailability();
     calcTotal();
 }
 
 function isCurrentServiceAccepting() {
-    return SERVICE_AVAILABILITY[getCurrentTab()] !== false;
+    return isEstimateAccepting();
 }
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -332,6 +460,7 @@ function updateSetPanels() {
         hideSetPanels();
     }
 
+    applySetPlanAvailability();
     calcTotal();
 }
 
@@ -939,7 +1068,12 @@ function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) 
     const button = document.getElementById("btn_submit");
     if (!button) return;
 
-    if (SERVICE_AVAILABILITY[currentTab] === false) {
+    const estimateForAvailability =
+        typeof getCurrentEstimateData === "function"
+            ? getCurrentEstimateData()
+            : null;
+
+    if (!isEstimateAccepting(estimateForAvailability)) {
         button.disabled = true;
         button.textContent = "受付停止中";
         button.onclick = null;
