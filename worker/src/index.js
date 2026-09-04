@@ -10,6 +10,14 @@ const SERVICE_KEYS = [
     "set"
 ];
 
+const SET_PLAN_REQUIREMENTS = {
+    mix_mv: ["mix", "mv"],
+    mv_illust: ["mv", "illust"],
+    movie_illust: ["movie", "illust"],
+    mix_mv_illust: ["mix", "mv", "illust"]
+};
+
+
 const REQUEST_STATUSES = [
     "new",
     "checked",
@@ -17,6 +25,12 @@ const REQUEST_STATUSES = [
     "completed",
     "cancelled"
 ];
+
+const TURNSTILE_EXPECTED_HOSTNAME =
+    "jankyjankyjanky.github.io";
+
+const TURNSTILE_EXPECTED_ACTION =
+    "submit_request";
 
 export default {
     async fetch(request, env) {
@@ -71,7 +85,9 @@ export default {
             return jsonResponse(
                 {
                     ok: true,
-                    settings
+                    settings,
+                    setPlans:
+                        getSetPlanSettings(settings)
                 },
                 200,
                 corsHeaders
@@ -104,6 +120,31 @@ export default {
 
                 const body = await request.json();
                 const data = body?.request;
+
+                const turnstileToken =
+                    clean(
+                        body?.turnstileToken,
+                        2048
+                    );
+
+                const turnstileResult =
+                    await verifyTurnstile(
+                        env,
+                        turnstileToken,
+                        request
+                    );
+
+                if (!turnstileResult.ok) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "セキュリティ確認に失敗しました。ページを再読み込みしてもう一度お試しください。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
 
                 if (
                     !data ||
@@ -170,6 +211,48 @@ export default {
                         409,
                         corsHeaders
                     );
+                }
+
+                if (serviceKey === "set") {
+                    const planKey =
+                        clean(
+                            estimate?.set?.planKey,
+                            50
+                        );
+
+                    const requirements =
+                        SET_PLAN_REQUIREMENTS[planKey];
+
+                    if (!requirements) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error: "セット内容が正しくありません。"
+                            },
+                            400,
+                            corsHeaders
+                        );
+                    }
+
+                    const stoppedComponents =
+                        requirements.filter(
+                            key =>
+                                settings[key] === false
+                        );
+
+                    if (
+                        stoppedComponents.length > 0
+                    ) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error:
+                                    "このセットに含まれるサービスが現在受付停止中です。"
+                            },
+                            409,
+                            corsHeaders
+                        );
+                    }
                 }
 
                 const activityName =
@@ -343,8 +426,7 @@ export default {
                 return jsonResponse(
                     {
                         ok: true,
-                        requestId,
-                        discordNotified
+                        requestId
                     },
                     200,
                     corsHeaders
@@ -642,6 +724,125 @@ export default {
 };
 
 
+
+async function verifyTurnstile(
+    env,
+    token,
+    request
+) {
+    if (
+        !env.TURNSTILE_SECRET_KEY ||
+        !token
+    ) {
+        return {
+            ok: false,
+            reason: "missing-secret-or-token"
+        };
+    }
+
+    try {
+        const response =
+            await fetch(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
+
+                    body:
+                        new URLSearchParams({
+                            secret:
+                                env.TURNSTILE_SECRET_KEY,
+
+                            response:
+                                token,
+
+                            remoteip:
+                                request.headers.get(
+                                    "CF-Connecting-IP"
+                                ) || ""
+                        })
+                }
+            );
+
+        if (!response.ok) {
+            console.error(
+                "Turnstile Siteverify HTTP error:",
+                response.status
+            );
+
+            return {
+                ok: false,
+                reason: "siteverify-http-error"
+            };
+        }
+
+        const result =
+            await response.json();
+
+        if (!result.success) {
+            console.warn(
+                "Turnstile rejected token:",
+                result["error-codes"] || []
+            );
+
+            return {
+                ok: false,
+                reason: "challenge-failed"
+            };
+        }
+
+        if (
+            result.hostname !==
+            TURNSTILE_EXPECTED_HOSTNAME
+        ) {
+            console.warn(
+                "Turnstile hostname mismatch:",
+                result.hostname
+            );
+
+            return {
+                ok: false,
+                reason: "hostname-mismatch"
+            };
+        }
+
+        if (
+            result.action !==
+            TURNSTILE_EXPECTED_ACTION
+        ) {
+            console.warn(
+                "Turnstile action mismatch:",
+                result.action
+            );
+
+            return {
+                ok: false,
+                reason: "action-mismatch"
+            };
+        }
+
+        return {
+            ok: true
+        };
+
+    } catch (error) {
+        console.error(
+            "Turnstile verification error:",
+            error
+        );
+
+        return {
+            ok: false,
+            reason: "verification-error"
+        };
+    }
+}
+
+
 async function getServiceSettings(env) {
     const defaults = {
         mix: true,
@@ -686,6 +887,24 @@ async function getServiceSettings(env) {
     return defaults;
 }
 
+
+
+function getSetPlanSettings(settings) {
+    const result = {};
+
+    for (
+        const [planKey, requirements]
+        of Object.entries(SET_PLAN_REQUIREMENTS)
+    ) {
+        result[planKey] =
+            settings.set !== false &&
+            requirements.every(
+                key => settings[key] !== false
+            );
+    }
+
+    return result;
+}
 
 function isAdmin(request, env) {
     if (!env.ADMIN_TOKEN) {

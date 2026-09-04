@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>なずな ご依頼フォーム</title>
-    <link rel="stylesheet" href="style.css?v=13">
-    <link rel="stylesheet" href="request.css?v=13">
+    <link rel="stylesheet" href="style.css?v=14">
+    <link rel="stylesheet" href="request.css?v=14">
 </head>
 <body class="request-page">
 
@@ -347,6 +347,15 @@
         <h2>送信内容の確認</h2>
         <div id="preview_body"></div>
 
+        <div class="turnstile-box">
+            <strong>送信確認</strong>
+            <span class="desc">
+                不正な自動送信を防ぐため、送信前にセキュリティ確認を行います。
+            </span>
+            <div id="turnstile_widget"></div>
+            <div id="turnstile_message" class="turnstile-message" hidden></div>
+        </div>
+
         <div id="submit_status" class="submit-status" hidden></div>
 
         <div class="request-actions">
@@ -396,7 +405,9 @@
     </div>
 </template>
 
-<script src="script.js?v=13"></script>
-<script src="request.js?v=13"></script>
+<script src="script.js?v=14"></script>
+<script src="turnstile-config.js?v=1"></script>
+<script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+<script src="request.js?v=14"></script>
 </body>
 </html>
