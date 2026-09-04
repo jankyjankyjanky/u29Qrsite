@@ -367,3 +367,18 @@ input[type="number"] {
     cursor: not-allowed;
     opacity: 0.67;
 }
+
+
+/* 共通フッター */
+.site-footer {
+    max-width: 800px;
+    margin: 26px auto 120px;
+    padding: 0 15px;
+    text-align: center;
+    color: #757575;
+    font-size: 0.82rem;
+}
+
+.site-footer a {
+    color: #5D4037;
+}

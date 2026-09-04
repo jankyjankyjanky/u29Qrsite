@@ -353,3 +353,43 @@
     font-size: 0.84rem;
     line-height: 1.45;
 }
+
+
+/* v17: 規約・プライバシー同意 */
+.agreement-box {
+    background: #fff;
+    border: 1px solid #D7CCC8;
+    border-radius: 8px;
+    padding: 13px 14px;
+    margin-top: 18px;
+}
+
+.agreement-label {
+    display: flex;
+    gap: 9px;
+    align-items: flex-start;
+    line-height: 1.55;
+    cursor: pointer;
+}
+
+.agreement-label input {
+    margin-top: 4px;
+}
+
+.agreement-label a {
+    color: #5D4037;
+    font-weight: bold;
+}
+
+.site-footer {
+    max-width: 800px;
+    margin: 26px auto 120px;
+    padding: 0 15px;
+    text-align: center;
+    color: #757575;
+    font-size: 0.82rem;
+}
+
+.site-footer a {
+    color: #5D4037;
+}

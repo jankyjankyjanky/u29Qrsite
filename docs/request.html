@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>なずな ご依頼フォーム</title>
-    <link rel="stylesheet" href="style.css?v=14">
-    <link rel="stylesheet" href="request.css?v=14">
+    <link rel="stylesheet" href="style.css?v=17">
+    <link rel="stylesheet" href="request.css?v=17">
 </head>
 <body class="request-page">
 
@@ -347,6 +347,22 @@
         <h2>送信内容の確認</h2>
         <div id="preview_body"></div>
 
+
+        <div class="agreement-box">
+            <label class="agreement-label">
+                <input type="checkbox" id="agree_terms_privacy">
+                <span>
+                    <a href="terms.html" target="_blank" rel="noopener noreferrer">依頼規約</a>
+                    と
+                    <a href="privacy.html" target="_blank" rel="noopener noreferrer">プライバシー方針</a>
+                    を確認し、同意します。
+                </span>
+            </label>
+            <span class="desc">
+                依頼送信前に内容をご確認ください。
+            </span>
+        </div>
+
         <div class="turnstile-box">
             <strong>送信確認</strong>
             <span class="desc">
@@ -405,9 +421,16 @@
     </div>
 </template>
 
-<script src="script.js?v=14"></script>
+<script src="script.js?v=17"></script>
 <script src="turnstile-config.js?v=1"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-<script src="request.js?v=14"></script>
+<script src="request.js?v=17"></script>
+
+<footer class="site-footer">
+    <a href="terms.html">依頼規約</a>
+    <span>・</span>
+    <a href="privacy.html">プライバシー方針</a>
+</footer>
+
 </body>
 </html>

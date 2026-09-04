@@ -595,6 +595,20 @@ function setupFinalSubmit() {
             return;
         }
 
+
+        const agreement =
+            document.getElementById(
+                "agree_terms_privacy"
+            );
+
+        if (!agreement?.checked) {
+            setSubmitStatus(
+                "error",
+                "依頼規約とプライバシー方針を確認し、同意してから送信してください。"
+            );
+            return;
+        }
+
         if (!turnstileToken) {
             setSubmitStatus(
                 "error",
