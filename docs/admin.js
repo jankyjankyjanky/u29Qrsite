@@ -22,7 +22,7 @@ let allRequests = [];
 let pendingRequestId =
     new URLSearchParams(window.location.search).get("request") || "";
 
-window.addEventListener("DOMContentLoaded", () => {
+window.addEventListener("DOMContentLoaded", async () => {
     setupEvents();
 
     if (adminToken) {
