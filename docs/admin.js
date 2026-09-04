@@ -19,13 +19,16 @@ const STATUS_LABELS = {
 
 let adminToken = sessionStorage.getItem(TOKEN_KEY) || "";
 let allRequests = [];
+let pendingRequestId =
+    new URLSearchParams(window.location.search).get("request") || "";
 
 window.addEventListener("DOMContentLoaded", () => {
     setupEvents();
 
     if (adminToken) {
         showAdmin();
-        refreshAll();
+        await refreshAll();
+        await openPendingRequestIfNeeded();
     }
 });
 
@@ -35,6 +38,19 @@ function setupEvents() {
     document.getElementById("refresh_admin").addEventListener("click", refreshAll);
 
     document.getElementById("request_filter").addEventListener("change", renderRequestList);
+
+    document.getElementById("request_search").addEventListener("input", renderRequestList);
+
+    document.getElementById("show_new_only").addEventListener("click", () => {
+        document.getElementById("request_filter").value = "new";
+        renderRequestList();
+    });
+
+    document.getElementById("clear_request_filters").addEventListener("click", () => {
+        document.getElementById("request_filter").value = "";
+        document.getElementById("request_search").value = "";
+        renderRequestList();
+    });
 
     document.querySelectorAll("[data-close-detail]").forEach(element => {
         element.addEventListener("click", closeDetail);
@@ -88,6 +104,8 @@ async function refreshAll() {
             loadSettings(),
             loadRequests()
         ]);
+
+        updateUnreadSummary();
 
         document.getElementById("last_refresh").textContent =
             `最終更新: ${new Date().toLocaleString("ja-JP")}`;
@@ -160,10 +178,28 @@ async function loadRequests() {
 function renderRequestList() {
     const wrap = document.getElementById("request_list");
     const filter = document.getElementById("request_filter").value;
+    const query =
+        document.getElementById("request_search").value
+            .trim()
+            .toLowerCase();
 
-    const items = filter
+    let items = filter
         ? allRequests.filter(item => item.status === filter)
-        : allRequests;
+        : [...allRequests];
+
+    if (query) {
+        items = items.filter(item => {
+            return [
+                item.request_id,
+                item.activity_name,
+                item.estimate_category
+            ]
+                .filter(Boolean)
+                .some(value =>
+                    String(value).toLowerCase().includes(query)
+                );
+        });
+    }
 
     wrap.innerHTML = "";
 
@@ -175,7 +211,8 @@ function renderRequestList() {
 
     items.forEach(item => {
         const row = document.createElement("div");
-        row.className = "request-row";
+        row.className =
+            `request-row${item.status === "new" ? " is-new" : ""}`;
         row.tabIndex = 0;
 
         row.innerHTML = `
@@ -263,6 +300,12 @@ function renderDetail(item) {
                 ${escapeHtml(item.activity_name || "")} /
                 ${escapeHtml(item.estimate_category || "")}
             </span>
+            <a
+                class="detail-direct-link"
+                href="${escapeHtml(buildAdminRequestUrl(item.request_id))}"
+            >
+                この依頼への管理画面リンク
+            </a>
         </div>
 
         <div class="detail-status-row">
@@ -344,6 +387,21 @@ function renderDetail(item) {
                 ${escapeHtml(applicant.notes || item.notes || "なし")}
             </div>
         </div>
+
+        <div class="detail-section admin-note-area">
+            <h3>管理者メモ</h3>
+            <span class="desc">
+                このメモは依頼者には表示されません。
+            </span>
+
+            <textarea id="admin_note" placeholder="進行上のメモ、確認事項など">${escapeHtml(item.admin_note || "")}</textarea>
+
+            <div class="admin-note-actions">
+                <button type="button" class="secondary-button" id="save_admin_note">
+                    メモを保存
+                </button>
+            </div>
+        </div>
     `;
 
     document.getElementById("save_status").addEventListener("click", async () => {
@@ -358,9 +416,68 @@ function renderDetail(item) {
         );
 
         await loadRequests();
+        updateUnreadSummary();
+        await openDetail(item.request_id);
+    });
+
+    document.getElementById("save_admin_note").addEventListener("click", async () => {
+        const note =
+            document.getElementById("admin_note").value;
+
+        await adminFetch(
+            `/api/admin/requests/${encodeURIComponent(item.request_id)}/note`,
+            {
+                method: "PUT",
+                body: JSON.stringify({ note })
+            }
+        );
+
         await openDetail(item.request_id);
     });
 }
+
+
+function updateUnreadSummary() {
+    const newCount =
+        allRequests.filter(
+            item => item.status === "new"
+        ).length;
+
+    const badge =
+        document.getElementById(
+            "unread_summary"
+        );
+
+    if (badge) {
+        badge.textContent =
+            `新規 ${newCount}件`;
+    }
+}
+
+async function openPendingRequestIfNeeded() {
+    if (!pendingRequestId) return;
+
+    const requestId = pendingRequestId;
+    pendingRequestId = "";
+
+    await openDetail(requestId);
+}
+
+function buildAdminRequestUrl(requestId) {
+    const url =
+        new URL(
+            window.location.origin +
+            window.location.pathname
+        );
+
+    url.searchParams.set(
+        "request",
+        requestId
+    );
+
+    return url.toString();
+}
+
 
 async function adminFetch(path, options = {}) {
     const response = await fetch(

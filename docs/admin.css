@@ -392,3 +392,79 @@ body.admin-page {
     margin-bottom: 4px;
     color: #5D4037;
 }
+
+
+/* v15: 件数・検索・管理者メモ */
+.admin-summary-badge {
+    display: inline-block;
+    margin-left: 8px;
+    padding: 3px 8px;
+    border-radius: 14px;
+    background: #FFCA28;
+    color: #3E2723;
+    font-size: 0.76rem;
+    font-weight: bold;
+    vertical-align: middle;
+}
+
+.request-tools {
+    display: grid;
+    grid-template-columns: minmax(220px, 1fr) 170px auto auto;
+    gap: 8px;
+    margin: 14px 0 4px;
+}
+
+.request-tools input[type="search"],
+.request-tools select {
+    box-sizing: border-box;
+    width: 100%;
+    padding: 9px 10px;
+    border: 1px solid #D7CCC8;
+    border-radius: 5px;
+    background: #fff;
+    color: #4A3B32;
+    font: inherit;
+}
+
+.admin-note-area textarea {
+    box-sizing: border-box;
+    width: 100%;
+    min-height: 150px;
+    padding: 10px 11px;
+    border: 1px solid #D7CCC8;
+    border-radius: 7px;
+    resize: vertical;
+    font: inherit;
+    color: #4A3B32;
+    background: #fff;
+}
+
+.admin-note-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 8px;
+}
+
+.detail-direct-link {
+    display: inline-block;
+    margin-top: 5px;
+    color: #5D4037;
+    font-size: 0.8rem;
+    overflow-wrap: anywhere;
+}
+
+.request-row.is-new {
+    border-left: 5px solid #FFCA28;
+}
+
+@media (max-width: 850px) {
+    .request-tools {
+        grid-template-columns: 1fr 1fr;
+    }
+}
+
+@media (max-width: 550px) {
+    .request-tools {
+        grid-template-columns: 1fr;
+    }
+}

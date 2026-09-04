@@ -32,6 +32,9 @@ const TURNSTILE_EXPECTED_HOSTNAME =
 const TURNSTILE_EXPECTED_ACTION =
     "submit_request";
 
+const ADMIN_PAGE_URL =
+    "https://jankyjankyjanky.github.io/u29Qrsite/admin.html";
+
 export default {
     async fetch(request, env) {
         const origin = request.headers.get("Origin") || "";
@@ -665,6 +668,78 @@ export default {
             }
 
 
+
+            // 管理者メモ
+            const noteMatch =
+                url.pathname.match(
+                    /^\/api\/admin\/requests\/([^/]+)\/note$/
+                );
+
+            if (
+                request.method === "PUT" &&
+                noteMatch
+            ) {
+                const requestId =
+                    decodeURIComponent(noteMatch[1]);
+
+                const body =
+                    await request.json();
+
+                const note =
+                    clean(body?.note, 10000);
+
+                const exists =
+                    await env.DB
+                        .prepare(`
+                            SELECT request_id
+                            FROM requests
+                            WHERE request_id = ?
+                            LIMIT 1
+                        `)
+                        .bind(requestId)
+                        .first();
+
+                if (!exists) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "依頼が見つかりません。"
+                        },
+                        404,
+                        corsHeaders
+                    );
+                }
+
+                await env.DB
+                    .prepare(`
+                        INSERT INTO request_admin (
+                            request_id,
+                            admin_note,
+                            updated_at
+                        )
+                        VALUES (?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(request_id)
+                        DO UPDATE SET
+                            admin_note = excluded.admin_note,
+                            updated_at = CURRENT_TIMESTAMP
+                    `)
+                    .bind(
+                        requestId,
+                        note
+                    )
+                    .run();
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        requestId
+                    },
+                    200,
+                    corsHeaders
+                );
+            }
+
+
             // 依頼詳細
             const detailMatch =
                 url.pathname.match(
@@ -681,9 +756,17 @@ export default {
                 const item =
                     await env.DB
                         .prepare(`
-                            SELECT *
+                            SELECT
+                                requests.*,
+                                COALESCE(
+                                    request_admin.admin_note,
+                                    ''
+                                ) AS admin_note
                             FROM requests
-                            WHERE request_id = ?
+                            LEFT JOIN request_admin
+                                ON request_admin.request_id =
+                                   requests.request_id
+                            WHERE requests.request_id = ?
                             LIMIT 1
                         `)
                         .bind(requestId)
@@ -1021,6 +1104,9 @@ async function sendDiscordNotification(
                             title:
                                 requestId,
 
+                            url:
+                                `${ADMIN_PAGE_URL}?request=${encodeURIComponent(requestId)}`,
+
                             fields: [
                                 {
                                     name: "依頼者",
@@ -1051,6 +1137,13 @@ async function sendDiscordNotification(
                                         data.deadline ||
                                         "指定なし",
                                     inline: true
+                                },
+
+                                {
+                                    name: "管理画面",
+                                    value:
+                                        `[この依頼を開く](${ADMIN_PAGE_URL}?request=${encodeURIComponent(requestId)})`,
+                                    inline: false
                                 }
                             ],
 

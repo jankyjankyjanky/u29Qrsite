@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex,nofollow">
     <title>なずな 依頼管理</title>
-    <link rel="stylesheet" href="style.css?v=12">
-    <link rel="stylesheet" href="admin.css?v=1">
+    <link rel="stylesheet" href="style.css?v=15">
+    <link rel="stylesheet" href="admin.css?v=2">
 </head>
 <body class="admin-page">
 
@@ -41,6 +41,7 @@
         <div class="admin-toolbar">
             <div>
                 <strong>管理画面</strong>
+                <span id="unread_summary" class="admin-summary-badge">新規 0件</span>
                 <span id="last_refresh" class="desc"></span>
             </div>
 
@@ -77,8 +78,17 @@
             <div class="admin-card-title-row">
                 <div>
                     <h2>依頼一覧</h2>
-                    <span class="desc">新しい依頼から順に表示します。</span>
+                    <span class="desc">依頼番号・活動名・依頼区分で検索できます。</span>
                 </div>
+            </div>
+
+            <div class="request-tools">
+                <input
+                    type="search"
+                    id="request_search"
+                    placeholder="依頼番号・活動名・依頼区分を検索"
+                    autocomplete="off"
+                >
 
                 <select id="request_filter">
                     <option value="">すべて</option>
@@ -88,6 +98,14 @@
                     <option value="completed">完了</option>
                     <option value="cancelled">キャンセル</option>
                 </select>
+
+                <button type="button" class="secondary-button" id="show_new_only">
+                    新規のみ
+                </button>
+
+                <button type="button" class="secondary-button" id="clear_request_filters">
+                    条件をクリア
+                </button>
             </div>
 
             <div id="request_list" class="request-list"></div>
@@ -106,6 +124,6 @@
     </section>
 </div>
 
-<script src="admin.js?v=1"></script>
+<script src="admin.js?v=2"></script>
 </body>
 </html>
