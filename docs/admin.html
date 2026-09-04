@@ -5,8 +5,8 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="robots" content="noindex,nofollow">
     <title>なずな 依頼管理</title>
-    <link rel="stylesheet" href="style.css?v=15">
-    <link rel="stylesheet" href="admin.css?v=2">
+    <link rel="stylesheet" href="style.css?v=16">
+    <link rel="stylesheet" href="admin.css?v=3">
 </head>
 <body class="admin-page">
 
@@ -91,12 +91,14 @@
                 >
 
                 <select id="request_filter">
-                    <option value="">すべて</option>
+                    <option value="">通常表示</option>
                     <option value="new">新規</option>
                     <option value="checked">確認済み</option>
                     <option value="in_progress">制作中</option>
                     <option value="completed">完了</option>
                     <option value="cancelled">キャンセル</option>
+                    <option value="archived">アーカイブ</option>
+                    <option value="all">すべて（アーカイブ含む）</option>
                 </select>
 
                 <button type="button" class="secondary-button" id="show_new_only">
@@ -124,6 +126,6 @@
     </section>
 </div>
 
-<script src="admin.js?v=3"></script>
+<script src="admin.js?v=4"></script>
 </body>
 </html>

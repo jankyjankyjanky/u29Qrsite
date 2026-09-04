@@ -14,7 +14,8 @@ const STATUS_LABELS = {
     checked: "確認済み",
     in_progress: "制作中",
     completed: "完了",
-    cancelled: "キャンセル"
+    cancelled: "キャンセル",
+    archived: "アーカイブ"
 };
 
 let adminToken = sessionStorage.getItem(TOKEN_KEY) || "";
@@ -183,9 +184,19 @@ function renderRequestList() {
             .trim()
             .toLowerCase();
 
-    let items = filter
-        ? allRequests.filter(item => item.status === filter)
-        : [...allRequests];
+    let items;
+
+    if (filter === "all") {
+        items = [...allRequests];
+    } else if (filter) {
+        items = allRequests.filter(
+            item => item.status === filter
+        );
+    } else {
+        items = allRequests.filter(
+            item => item.status !== "archived"
+        );
+    }
 
     if (query) {
         items = items.filter(item => {
@@ -212,7 +223,9 @@ function renderRequestList() {
     items.forEach(item => {
         const row = document.createElement("div");
         row.className =
-            `request-row${item.status === "new" ? " is-new" : ""}`;
+            "request-row" +
+            (item.status === "new" ? " is-new" : "") +
+            (item.status === "archived" ? " is-archived" : "");
         row.tabIndex = 0;
 
         row.innerHTML = `
@@ -306,6 +319,34 @@ function renderDetail(item) {
             >
                 この依頼への管理画面リンク
             </a>
+
+            <div class="detail-action-row">
+                <button
+                    type="button"
+                    class="copy-button"
+                    id="copy_request_id"
+                >
+                    依頼番号をコピー
+                </button>
+
+                <button
+                    type="button"
+                    class="copy-button"
+                    id="copy_admin_link"
+                >
+                    管理画面リンクをコピー
+                </button>
+
+                <button
+                    type="button"
+                    class="archive-button ${item.status === "archived" ? "restore" : ""}"
+                    id="archive_request"
+                >
+                    ${item.status === "archived" ? "アーカイブから戻す" : "アーカイブ"}
+                </button>
+
+                <span id="detail_copy_feedback" class="copy-feedback"></span>
+            </div>
         </div>
 
         <div class="detail-status-row">
@@ -365,7 +406,25 @@ function renderDetail(item) {
                 <dd>${escapeHtml(contactLabel(applicant.contactMethod || item.contact_method))}</dd>
 
                 <dt>連絡先</dt>
-                <dd>${escapeHtml(applicant.contactValue || item.contact_value || "")}</dd>
+                <dd>
+                    <div class="contact-value">
+                        ${escapeHtml(applicant.contactValue || item.contact_value || "")}
+                    </div>
+                    <div class="detail-action-row">
+                        <button
+                            type="button"
+                            class="copy-button"
+                            id="copy_contact"
+                        >
+                            連絡先をコピー
+                        </button>
+
+                        ${contactOpenHtml(
+                            applicant.contactMethod || item.contact_method,
+                            applicant.contactValue || item.contact_value || ""
+                        )}
+                    </div>
+                </dd>
 
                 <dt>希望納期</dt>
                 <dd>${escapeHtml(applicant.deadline || item.deadline || "指定なし")}</dd>
@@ -403,6 +462,59 @@ function renderDetail(item) {
             </div>
         </div>
     `;
+
+    document.getElementById("copy_request_id").addEventListener("click", async () => {
+        await copyText(
+            item.request_id || "",
+            "依頼番号をコピーしました"
+        );
+    });
+
+    document.getElementById("copy_admin_link").addEventListener("click", async () => {
+        await copyText(
+            buildAdminRequestUrl(item.request_id),
+            "管理画面リンクをコピーしました"
+        );
+    });
+
+    document.getElementById("copy_contact").addEventListener("click", async () => {
+        await copyText(
+            applicant.contactValue ||
+            item.contact_value ||
+            "",
+            "連絡先をコピーしました"
+        );
+    });
+
+    document.getElementById("archive_request").addEventListener("click", async () => {
+        const nextStatus =
+            item.status === "archived"
+                ? "completed"
+                : "archived";
+
+        const message =
+            item.status === "archived"
+                ? "この依頼をアーカイブから戻しますか？"
+                : "この依頼をアーカイブしますか？ データは削除されません。";
+
+        if (!window.confirm(message)) {
+            return;
+        }
+
+        await adminFetch(
+            `/api/admin/requests/${encodeURIComponent(item.request_id)}/status`,
+            {
+                method: "PATCH",
+                body: JSON.stringify({
+                    status: nextStatus
+                })
+            }
+        );
+
+        closeDetail();
+        await loadRequests();
+        updateUnreadSummary();
+    });
 
     document.getElementById("save_status").addEventListener("click", async () => {
         const status = document.getElementById("detail_status").value;
@@ -529,6 +641,91 @@ function formatDateTime(value) {
     if (Number.isNaN(date.getTime())) return value;
 
     return date.toLocaleString("ja-JP");
+}
+
+
+async function copyText(value, successMessage) {
+    const text = String(value || "");
+
+    if (!text) {
+        showCopyFeedback("コピーする内容がありません");
+        return;
+    }
+
+    try {
+        await navigator.clipboard.writeText(text);
+        showCopyFeedback(successMessage);
+    } catch (error) {
+        console.error(error);
+        showCopyFeedback("コピーに失敗しました");
+    }
+}
+
+function showCopyFeedback(message) {
+    const box =
+        document.getElementById(
+            "detail_copy_feedback"
+        );
+
+    if (!box) return;
+
+    box.textContent = message;
+
+    window.setTimeout(() => {
+        if (box.textContent === message) {
+            box.textContent = "";
+        }
+    }, 1800);
+}
+
+function contactOpenHtml(method, value) {
+    const href =
+        contactHref(method, value);
+
+    if (!href) {
+        return "";
+    }
+
+    return `
+        <a
+            class="contact-open-button"
+            href="${escapeHtml(href)}"
+            target="_blank"
+            rel="noopener noreferrer"
+        >
+            連絡先を開く
+        </a>
+    `;
+}
+
+function contactHref(method, value) {
+    const raw =
+        String(value || "").trim();
+
+    if (!raw) return "";
+
+    if (/^https?:\/\//i.test(raw)) {
+        return raw;
+    }
+
+    if (method === "email") {
+        return `mailto:${raw}`;
+    }
+
+    if (method === "x") {
+        const username =
+            raw.replace(/^@/, "")
+               .replace(/^https?:\/\/(www\.)?(x|twitter)\.com\//i, "")
+               .split(/[/?#]/)[0];
+
+        return username
+            ? `https://x.com/${encodeURIComponent(username)}`
+            : "";
+    }
+
+    // Discordのユーザー名だけではWeb上から確実にDMを直接開けないため、
+    // Discordはコピーのみ。招待URL等を入力した場合は上のURL判定で開ける。
+    return "";
 }
 
 function contactLabel(value) {

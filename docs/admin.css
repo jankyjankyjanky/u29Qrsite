@@ -468,3 +468,56 @@ body.admin-page {
         grid-template-columns: 1fr;
     }
 }
+
+
+/* v16: 連絡・アーカイブ操作 */
+.detail-action-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+    margin-top: 8px;
+}
+
+.copy-button,
+.contact-open-button,
+.archive-button {
+    border: 1px solid #BCAAA4;
+    background: #fff;
+    color: #5D4037;
+    padding: 7px 11px;
+    border-radius: 18px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.contact-open-button {
+    text-decoration: none;
+    display: inline-block;
+}
+
+.archive-button {
+    border-color: #9E9E9E;
+    color: #616161;
+}
+
+.archive-button.restore {
+    border-color: #FFCA28;
+    background: #FFF8E1;
+    color: #5D4037;
+}
+
+.copy-feedback {
+    display: inline-block;
+    margin-left: 7px;
+    font-size: 0.78rem;
+    color: #757575;
+}
+
+.request-row.is-archived {
+    opacity: 0.62;
+    background: #F5F5F5;
+}
+
+.contact-value {
+    overflow-wrap: anywhere;
+}

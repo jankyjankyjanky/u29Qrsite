@@ -23,7 +23,8 @@ const REQUEST_STATUSES = [
     "checked",
     "in_progress",
     "completed",
-    "cancelled"
+    "cancelled",
+    "archived"
 ];
 
 const TURNSTILE_EXPECTED_HOSTNAME =
