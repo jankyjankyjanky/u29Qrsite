@@ -1,11 +1,12 @@
 // ============================================================
-// u29Qr ご依頼フォーム
-// request.js v5
+// なずな ご依頼フォーム
+// request.js v4
 // ============================================================
 
-const ESTIMATE_STORAGE_KEY = "u29qr_current_estimate";
-const REQUEST_DRAFT_KEY = "u29qr_request_draft";
-const LAST_SUBMISSION_KEY = "u29qr_last_submission";
+const ESTIMATE_STORAGE_KEY = "nazuna_current_estimate";
+const REQUEST_DRAFT_KEY = "nazuna_request_draft";
+const LAST_SUBMISSION_KEY = "nazuna_last_submission";
+const WORKER_API_URL = "https://worker.nazuna-request.workers.dev/api/requests";
 let confirmedRequestData = null;
 
 window.addEventListener("DOMContentLoaded", () => {
@@ -458,20 +459,10 @@ function setupFinalSubmit() {
     if (!button) return;
 
     button.addEventListener("click", async () => {
-        const status = document.getElementById("submit_status");
-
         if (!confirmedRequestData) {
             setSubmitStatus(
                 "error",
-                "送信前に「入力内容を確認する」を押して、依頼内容を確認してください。"
-            );
-            return;
-        }
-
-        if (typeof window.u29SubmitRequest !== "function") {
-            setSubmitStatus(
-                "error",
-                "Firebaseの設定がまだ完了していません。firebase-config.js を設定してください。"
+                "先に「入力内容を確認する」を押して、内容を確認してください。"
             );
             return;
         }
@@ -481,32 +472,47 @@ function setupFinalSubmit() {
         setSubmitStatus("loading", "依頼を送信しています。");
 
         try {
-            const result = await window.u29SubmitRequest(confirmedRequestData);
+            const response = await fetch(WORKER_API_URL, {
+                method: "POST",
+                headers: {
+                    "Content-Type": "application/json"
+                },
+                body: JSON.stringify({
+                    request: confirmedRequestData
+                })
+            });
 
-            const submission = {
-                requestId: result.requestId,
-                savedAt: result.savedAt || new Date().toISOString(),
-                discordNotified: Boolean(result.discordNotified)
-            };
+            const result = await response.json().catch(() => null);
+
+            if (!response.ok || !result?.ok) {
+                throw new Error(
+                    result?.error ||
+                    `送信に失敗しました（HTTP ${response.status}）`
+                );
+            }
 
             localStorage.setItem(
                 LAST_SUBMISSION_KEY,
-                JSON.stringify(submission)
+                JSON.stringify({
+                    requestId: result.requestId,
+                    discordNotified: Boolean(result.discordNotified),
+                    savedAt: new Date().toISOString()
+                })
             );
 
-            // 送信済みの下書きを消す
             localStorage.removeItem(REQUEST_DRAFT_KEY);
 
             window.location.href =
                 `thanks.html?id=${encodeURIComponent(result.requestId)}`;
+
         } catch (error) {
-            console.error("依頼送信に失敗しました。", error);
+            console.error("依頼送信エラー:", error);
 
-            const message =
+            setSubmitStatus(
+                "error",
                 error?.message ||
-                "依頼の送信に失敗しました。時間をおいてもう一度お試しください。";
-
-            setSubmitStatus("error", message);
+                "依頼の送信に失敗しました。時間をおいてもう一度お試しください。"
+            );
 
             button.disabled = false;
             button.textContent = "依頼を送信";

@@ -1,4 +1,4 @@
-const LAST_SUBMISSION_KEY = "u29qr_last_submission";
+const LAST_SUBMISSION_KEY = "nazuna_last_submission";
 
 window.addEventListener("DOMContentLoaded", () => {
     const params = new URLSearchParams(window.location.search);

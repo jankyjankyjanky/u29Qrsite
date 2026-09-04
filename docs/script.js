@@ -1,6 +1,6 @@
 // ============================================================
-// u29Qr（うにくる）お見積りサイト
-// script.js v10
+// なずなお見積りサイト
+// script.js v9
 // ============================================================
 
 const TAB_INFO = {
@@ -843,7 +843,7 @@ function updateSubmitButton(currentTab, finalTotal, lines, extraMailLines = []) 
         const estimate = getCurrentEstimateData();
 
         localStorage.setItem(
-            "u29qr_current_estimate",
+            "nazuna_current_estimate",
             JSON.stringify(estimate)
         );
 
