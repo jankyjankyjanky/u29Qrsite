@@ -353,8 +353,11 @@ function updatePriceTags() {
     const rate = getDiscountRate();
 
     document.querySelectorAll(".price-tag").forEach(tag => {
-        // イラストは割引対象外
-        if (tag.closest(".illust-sub-form")) return;
+        // イラストと固定料金は割引対象外
+        if (
+            tag.closest(".illust-sub-form") ||
+            tag.classList.contains("fixed-price-tag")
+        ) return;
 
         if (!tag.dataset.originalPrice) {
             const match = tag.textContent.match(/[+＋]?\s*[\d,]+/);
@@ -799,14 +802,20 @@ function calculateSet() {
         }
     }
 
+    // クレジットなしは固定 +3,000円で割引対象外。
+    const noCreditAddon = addNoCreditLine(lines, "set");
+
     // 学割・初回割引は通常サービス部分だけに適用。
-    // イラストは従来どおり割引対象外。
+    // イラスト・クレジットなしは割引対象外。
     const rate = getDiscountRate();
     const discountedService = Math.floor(discountable * rate);
 
-    // 最低注文額は「学割・初回割引適用後、セット割引適用前」の金額で判定する。
-    // 最低注文額そのもの（例: 2,000円）は割引によって変化しない。
-    const beforeSetDiscount = discountedService + illust;
+    // 最低注文額は「学割・初回割引適用後、セット割引適用前」の注文総額で判定する。
+    // 固定オプションも注文総額に含める。
+    const beforeSetDiscount =
+        discountedService +
+        illust +
+        noCreditAddon;
     const meetsMinimum = beforeSetDiscount >= info.minimum;
 
     // 最低注文額を満たしている場合だけ、固定額のセット割引を適用。
@@ -871,7 +880,17 @@ function calcTotal() {
             result = calculateIllust("main");
         }
 
-        finalTotal = Math.floor(result.discountable * rate) + result.illust;
+        const noCreditAddon =
+            addNoCreditLine(
+                result.lines,
+                currentTab
+            );
+
+        finalTotal =
+            Math.floor(result.discountable * rate) +
+            result.illust +
+            noCreditAddon;
+
         lines = result.lines;
     }
 
@@ -1034,9 +1053,16 @@ function getCurrentEstimateData() {
             result = calculateIllust("main");
         }
 
+        const noCreditAddon =
+            addNoCreditLine(
+                result.lines,
+                currentTab
+            );
+
         finalTotal =
             Math.floor(result.discountable * rate) +
-            result.illust;
+            result.illust +
+            noCreditAddon;
 
         lines = result.lines;
     }

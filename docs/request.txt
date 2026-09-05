@@ -7,7 +7,11 @@ const ESTIMATE_STORAGE_KEY = "nazuna_current_estimate";
 const REQUEST_DRAFT_KEY = "nazuna_request_draft";
 const LAST_SUBMISSION_KEY = "nazuna_last_submission";
 const WORKER_API_URL = "https://worker.nazuna-request.workers.dev/api/requests";
+const TURNSTILE_ACTION = "submit_request";
+
 let confirmedRequestData = null;
+let turnstileWidgetId = null;
+let turnstileToken = "";
 
 window.addEventListener("DOMContentLoaded", () => {
     const savedEstimate = loadEstimate();
@@ -371,11 +375,15 @@ function setupForm() {
 
         const preview = document.getElementById("request_preview");
         preview.hidden = false;
+
+        ensureTurnstileRendered();
+
         preview.scrollIntoView({ behavior: "smooth", block: "start" });
     });
 
     document.getElementById("edit_request").addEventListener("click", () => {
         confirmedRequestData = null;
+        resetTurnstile();
         document.getElementById("request_preview").hidden = true;
 
         document.querySelector(".request-section")
@@ -454,6 +462,115 @@ function setValue(id, value) {
 }
 
 
+
+function ensureTurnstileRendered() {
+    const container =
+        document.getElementById("turnstile_widget");
+
+    if (!container) return;
+
+    const siteKey =
+        window.NAZUNA_TURNSTILE_SITE_KEY || "";
+
+    if (
+        !siteKey ||
+        siteKey === "YOUR_TURNSTILE_SITE_KEY"
+    ) {
+        setTurnstileMessage(
+            "TurnstileのSite Keyが未設定です。管理者側の設定完了まで送信できません。"
+        );
+        return;
+    }
+
+    if (
+        !window.turnstile ||
+        typeof window.turnstile.render !== "function"
+    ) {
+        // API script is async, so retry briefly while the preview is open.
+        window.setTimeout(
+            ensureTurnstileRendered,
+            250
+        );
+        return;
+    }
+
+    if (turnstileWidgetId !== null) {
+        resetTurnstile();
+        return;
+    }
+
+    turnstileWidgetId =
+        window.turnstile.render(
+            "#turnstile_widget",
+            {
+                sitekey: siteKey,
+                action: TURNSTILE_ACTION,
+                theme: "light",
+                size: "flexible",
+
+                callback(token) {
+                    turnstileToken = token;
+                    setTurnstileMessage("");
+                },
+
+                "expired-callback"() {
+                    turnstileToken = "";
+                    setTurnstileMessage(
+                        "セキュリティ確認の有効期限が切れました。もう一度確認してください。"
+                    );
+                },
+
+                "error-callback"() {
+                    turnstileToken = "";
+                    setTurnstileMessage(
+                        "セキュリティ確認を完了できませんでした。再読み込みしてもう一度お試しください。"
+                    );
+                },
+
+                "timeout-callback"() {
+                    turnstileToken = "";
+                    setTurnstileMessage(
+                        "セキュリティ確認がタイムアウトしました。もう一度お試しください。"
+                    );
+                }
+            }
+        );
+}
+
+function resetTurnstile() {
+    turnstileToken = "";
+
+    if (
+        turnstileWidgetId !== null &&
+        window.turnstile &&
+        typeof window.turnstile.reset === "function"
+    ) {
+        try {
+            window.turnstile.reset(
+                turnstileWidgetId
+            );
+        } catch (error) {
+            console.warn(
+                "Turnstile reset error:",
+                error
+            );
+        }
+    }
+}
+
+function setTurnstileMessage(message) {
+    const box =
+        document.getElementById(
+            "turnstile_message"
+        );
+
+    if (!box) return;
+
+    box.textContent = message;
+    box.hidden = !message;
+}
+
+
 function setupFinalSubmit() {
     const button = document.getElementById("final_submit");
     if (!button) return;
@@ -478,6 +595,30 @@ function setupFinalSubmit() {
             return;
         }
 
+
+        const agreement =
+            document.getElementById(
+                "agree_terms_privacy"
+            );
+
+        if (!agreement?.checked) {
+            setSubmitStatus(
+                "error",
+                "依頼規約とプライバシー方針を確認し、同意してから送信してください。"
+            );
+            return;
+        }
+
+        if (!turnstileToken) {
+            setSubmitStatus(
+                "error",
+                "セキュリティ確認が完了していません。確認完了後にもう一度「依頼を送信」を押してください。"
+            );
+
+            ensureTurnstileRendered();
+            return;
+        }
+
         button.disabled = true;
         button.textContent = "送信中...";
         setSubmitStatus("loading", "依頼を送信しています。");
@@ -489,7 +630,8 @@ function setupFinalSubmit() {
                     "Content-Type": "application/json"
                 },
                 body: JSON.stringify({
-                    request: confirmedRequestData
+                    request: confirmedRequestData,
+                    turnstileToken
                 })
             });
 
@@ -506,7 +648,6 @@ function setupFinalSubmit() {
                 LAST_SUBMISSION_KEY,
                 JSON.stringify({
                     requestId: result.requestId,
-                    discordNotified: Boolean(result.discordNotified),
                     savedAt: new Date().toISOString()
                 })
             );
@@ -524,6 +665,8 @@ function setupFinalSubmit() {
                 error?.message ||
                 "依頼の送信に失敗しました。時間をおいてもう一度お試しください。"
             );
+
+            resetTurnstile();
 
             button.disabled = false;
             button.textContent = "依頼を送信";

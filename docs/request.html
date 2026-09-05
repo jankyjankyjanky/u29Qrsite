@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>なずな ご依頼フォーム</title>
-    <link rel="stylesheet" href="style.css?v=17">
-    <link rel="stylesheet" href="request.css?v=17">
+    <link rel="stylesheet" href="style.css?v=18">
+    <link rel="stylesheet" href="request.css?v=18">
 </head>
 <body class="request-page">
 
@@ -84,7 +84,13 @@
                 <label><input type="checkbox" id="opt_mix_encode" value="1000" data-label="エンコード"> エンコード <span class="price-tag">+1000円</span></label><br>
                 <label><input type="checkbox" id="mix_opt_pitch" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
                 <label><input type="checkbox" id="mix_opt_rhythm" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
-                <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+                <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label><br>
+                <label class="credit-option">
+                <input type="checkbox" id="mix_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
             </div>
         </div>
 
@@ -109,7 +115,13 @@
 
             <div class="field">
                 <strong>オプション</strong><br>
-                <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+                <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label><br>
+                <label class="credit-option">
+                <input type="checkbox" id="mv_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
             </div>
         </div>
 
@@ -137,7 +149,13 @@
 
             <div class="field">
                 <strong>オプション</strong><br>
-                <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+                <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label><br>
+                <label class="credit-option">
+                <input type="checkbox" id="movie_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
             </div>
         </div>
 
@@ -145,6 +163,16 @@
         <div id="sec_illust" class="section request-budget-section">
             <h2>イラスト単体依頼</h2>
             <div id="wrap_illust_main"></div>
+
+            <div class="field">
+                <strong>オプション</strong><br>
+                <label class="credit-option">
+                <input type="checkbox" id="illust_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
+            </div>
         </div>
 
         <!-- セット -->
@@ -162,6 +190,16 @@
             </div>
 
             <div id="set_rule_summary" class="set-rule-summary" style="display:none;"></div>
+
+            <div class="field">
+                <strong>セット共通オプション</strong><br>
+                <label class="credit-option">
+                <input type="checkbox" id="set_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
+            </div>
 
             <div id="set_mix_panel" class="set-component" style="display:none;">
                 <h3>MIX</h3>
@@ -308,7 +346,16 @@
             <div class="request-field">
                 <label for="materials_url">素材URL</label>
                 <input type="url" id="materials_url" name="materials_url" placeholder="Google DriveなどのURL">
-                <span class="desc">まだ素材が揃っていない場合は空欄でも構いません。</span>
+                <span class="desc">まだ素材が揃っていない場合は空欄でも構いません。必要な素材がすべて揃った時点を制作開始の基準とします。</span>
+
+                <div class="material-guide">
+                    <strong>MIX素材について（推奨）</strong>
+                    <span>・ボーカル：モノラルWAV / inst：ステレオWAV</span>
+                    <span>・メイン、ハモリ、ダブル等は可能であれば別ファイル</span>
+                    <span>・すべて同じ開始位置から書き出し</span>
+                    <span>・音割れ（クリップ）は避けてください</span>
+                    <span>・意図した加工がある場合は参考用音源も添付いただけるとスムーズです</span>
+                </div>
             </div>
 
             <div class="request-field">
@@ -421,10 +468,10 @@
     </div>
 </template>
 
-<script src="script.js?v=17"></script>
+<script src="script.js?v=18"></script>
 <script src="turnstile-config.js?v=1"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-<script src="request.js?v=17"></script>
+<script src="request.js?v=18"></script>
 
 <footer class="site-footer">
     <a href="terms.html">依頼規約</a>

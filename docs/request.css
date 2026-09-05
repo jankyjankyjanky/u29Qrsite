@@ -393,3 +393,25 @@
 .site-footer a {
     color: #5D4037;
 }
+
+
+/* v18: MIX素材ガイド */
+.material-guide {
+    margin-top: 10px;
+    padding: 11px 12px;
+    background: #FFF8E1;
+    border-left: 4px solid #FFCA28;
+    border-radius: 7px;
+    font-size: 0.84rem;
+    line-height: 1.55;
+}
+
+.material-guide strong,
+.material-guide span {
+    display: block;
+}
+
+.material-guide strong {
+    color: #5D4037;
+    margin-bottom: 4px;
+}

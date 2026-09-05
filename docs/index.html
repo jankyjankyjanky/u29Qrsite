@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>なずな お見積りサイト</title>
-    <link rel="stylesheet" href="style.css?v=13">
+    <link rel="stylesheet" href="style.css?v=18">
 </head>
 <body>
 
@@ -37,6 +37,112 @@
         <label><input type="checkbox" id="chk_first"> 初回利用者 20%off</label><br>
         <span class="desc">（学割と同時適応で 60%off となります。）</span>
     </div>
+
+
+    <section class="guide-card workflow-card">
+        <h2>ご依頼の流れ</h2>
+
+        <div class="workflow-steps">
+            <div class="workflow-step">
+                <span class="workflow-number">1</span>
+                <div>
+                    <strong>当サイトから依頼内容を送信</strong>
+                    <span>まずはご希望の内容を依頼フォームからお送りください。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">2</span>
+                <div>
+                    <strong>なずなからヒアリング・正式見積り</strong>
+                    <span>素材やご希望を確認し、対応内容・料金・納期をご案内します。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">3</span>
+                <div>
+                    <strong>依頼者さまの了承</strong>
+                    <span>正式見積りと制作内容にご了承いただいた時点で正式受付となります。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">4</span>
+                <div>
+                    <strong>素材が揃い次第、制作開始</strong>
+                    <span>必要な素材がすべて揃った日を制作開始の基準とします。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">5</span>
+                <div>
+                    <strong>完成品のチェック</strong>
+                    <span>確認用の完成品をご確認いただき、必要に応じて修正を行います。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">6</span>
+                <div>
+                    <strong>内容にご納得いただけたらお支払い</strong>
+                    <span>完成内容へのご了承後、正式料金をご入金いただきます。</span>
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <span class="workflow-number">7</span>
+                <div>
+                    <strong>正式納品・依頼完了</strong>
+                    <span>入金確認後、原則ギガファイル便（100日保存）で納品します。</span>
+                </div>
+            </div>
+        </div>
+    </section>
+
+    <section class="guide-card request-guide-card">
+        <h2>ご依頼前にご確認ください</h2>
+
+        <div class="guide-grid">
+            <div class="guide-item">
+                <strong>納期の目安</strong>
+                <span>MIX・イラスト：制作開始から基本2週間以上</span>
+                <span>MV・動画編集：制作開始から基本3週間以上</span>
+                <span>セット依頼：含まれる内容のうち長い方を目安とします。</span>
+            </div>
+
+            <div class="guide-item">
+                <strong>修正</strong>
+                <span>軽微な修正は3回まで無料です。</span>
+                <span>修正により納期が延びる場合があります。</span>
+            </div>
+
+            <div class="guide-item">
+                <strong>キャンセル</strong>
+                <span>完成前のキャンセルは、作業量にかかわらず無料です。</span>
+                <span>完成品提示後・了承前のキャンセルは、正式料金の50%を申し受けます。</span>
+            </div>
+
+            <div class="guide-item">
+                <strong>商用利用・クレジット</strong>
+                <span>基本的に商用利用可能です。</span>
+                <span>公開作品には「なずな」のクレジット記載をお願いします。</span>
+                <span>クレジットなし：+3,000円（固定）</span>
+            </div>
+
+            <div class="guide-item guide-item-wide">
+                <strong>MIX素材の推奨形式</strong>
+                <span>ボーカル：モノラル / inst：ステレオのWAV推奨。</span>
+                <span>ボーカル・ハモリ・ダブル等は可能であれば分け、すべて同じ開始位置から書き出してください。</span>
+                <span>音割れ（クリップ）を避け、意図したエフェクトがある場合は参考用音源も添えていただけるとスムーズです。</span>
+            </div>
+        </div>
+
+        <p class="guide-link-row">
+            詳細は <a href="terms.html">依頼規約</a> をご確認ください。
+        </p>
+    </section>
 
     <!-- セット予算 -->
     <div id="sec_set" class="section">
@@ -72,6 +178,16 @@
         </div>
 
         <div id="set_rule_summary" class="set-rule-summary" style="display:none;"></div>
+
+        <div class="field">
+            <strong>セット共通オプション</strong><br>
+            <label class="credit-option">
+                <input type="checkbox" id="set_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
+        </div>
 
         <!-- セット用MIX -->
         <div id="set_mix_panel" class="set-component" style="display:none;">
@@ -200,7 +316,13 @@
             <label><input type="checkbox" id="opt_mix_encode" value="1000" data-label="エンコード"> エンコード <span class="price-tag">+1000円</span> <span class="desc" style="display:inline;">（MVとの同時依頼時は無料）</span></label><br>
             <label><input type="checkbox" id="mix_opt_pitch" class="mix-opt" value="1000" data-label="ピッチ補正"> ピッチ補正 <span class="price-tag">+1000円</span></label><br>
             <label><input type="checkbox" id="mix_opt_rhythm" class="mix-opt" value="1000" data-label="リズム補正"> リズム補正 <span class="price-tag">+1000円</span></label><br>
-            <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label>
+            <label><input type="checkbox" id="mix_opt_speed" class="mix-opt" value="2000" data-label="スピード納品"> スピード納品 <span class="price-tag">+2000円</span></label><br>
+            <label class="credit-option">
+                <input type="checkbox" id="mix_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
         </div>
     </div>
 
@@ -227,7 +349,13 @@
 
         <div class="field">
             <strong>オプション</strong><br>
-            <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+            <label><input type="checkbox" id="opt_mv_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label><br>
+            <label class="credit-option">
+                <input type="checkbox" id="mv_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
         </div>
     </div>
 
@@ -256,7 +384,13 @@
 
         <div class="field">
             <strong>オプション</strong><br>
-            <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label>
+            <label><input type="checkbox" id="opt_movie_thumb" value="500" data-label="サムネイル"> サムネイル <span class="price-tag">+500円</span></label><br>
+            <label class="credit-option">
+                <input type="checkbox" id="movie_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
         </div>
     </div>
 
@@ -264,6 +398,16 @@
     <div id="sec_illust" class="section">
         <h2>イラスト単体依頼</h2>
         <div id="wrap_illust_main"></div>
+
+        <div class="field">
+            <strong>オプション</strong><br>
+            <label class="credit-option">
+                <input type="checkbox" id="illust_opt_no_credit" value="3000" data-label="クレジットなし">
+                クレジットなし
+                <span class="price-tag fixed-price-tag">+3,000円</span>
+                <span class="desc" style="display:inline;">（固定料金・割引対象外）</span>
+            </label>
+        </div>
     </div>
 </div>
 
@@ -315,7 +459,7 @@
     </div>
 </template>
 
-<script src="script.js?v=13"></script>
+<script src="script.js?v=18"></script>
 
 <footer class="site-footer">
     <a href="terms.html">依頼規約</a>

@@ -382,3 +382,116 @@ input[type="number"] {
 .site-footer a {
     color: #5D4037;
 }
+
+
+/* v18: ご依頼の流れ・ルール */
+.guide-card {
+    background: #fff;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.05);
+}
+
+.guide-card h2 {
+    border-bottom: 2px solid #FFCA28;
+    padding-bottom: 6px;
+    margin-top: 0;
+    color: #5D4037;
+    font-size: 1.25rem;
+}
+
+.workflow-steps {
+    display: grid;
+    gap: 10px;
+}
+
+.workflow-step {
+    display: grid;
+    grid-template-columns: 34px 1fr;
+    gap: 10px;
+    align-items: start;
+}
+
+.workflow-number {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%;
+    background: #FFCA28;
+    color: #3E2723;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: bold;
+}
+
+.workflow-step strong,
+.workflow-step span {
+    display: block;
+}
+
+.workflow-step > div > span {
+    color: #757575;
+    font-size: 0.86rem;
+    line-height: 1.5;
+    margin-top: 2px;
+}
+
+.guide-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 10px;
+}
+
+.guide-item {
+    background: #F9F6F0;
+    border-radius: 8px;
+    padding: 12px 13px;
+}
+
+.guide-item-wide {
+    grid-column: 1 / -1;
+}
+
+.guide-item strong,
+.guide-item span {
+    display: block;
+}
+
+.guide-item span {
+    color: #616161;
+    font-size: 0.84rem;
+    line-height: 1.55;
+    margin-top: 3px;
+}
+
+.guide-link-row {
+    margin: 14px 0 0;
+    font-size: 0.86rem;
+}
+
+.guide-link-row a {
+    color: #5D4037;
+    font-weight: bold;
+}
+
+.credit-option {
+    display: inline-block;
+    margin-top: 2px;
+}
+
+.fixed-price-tag {
+    color: #D32F2F;
+    font-weight: bold;
+}
+
+@media (max-width: 620px) {
+    .guide-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .guide-item-wide {
+        grid-column: auto;
+    }
+}
