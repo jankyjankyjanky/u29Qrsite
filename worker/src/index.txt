@@ -10,13 +10,31 @@ const SERVICE_KEYS = [
     "set"
 ];
 
+const SET_PLAN_REQUIREMENTS = {
+    mix_mv: ["mix", "mv"],
+    mv_illust: ["mv", "illust"],
+    movie_illust: ["movie", "illust"],
+    mix_mv_illust: ["mix", "mv", "illust"]
+};
+
+
 const REQUEST_STATUSES = [
     "new",
     "checked",
     "in_progress",
     "completed",
-    "cancelled"
+    "cancelled",
+    "archived"
 ];
+
+const TURNSTILE_EXPECTED_HOSTNAME =
+    "jankyjankyjanky.github.io";
+
+const TURNSTILE_EXPECTED_ACTION =
+    "submit_request";
+
+const ADMIN_PAGE_URL =
+    "https://jankyjankyjanky.github.io/nazuna-request-site/admin.html";
 
 export default {
     async fetch(request, env) {
@@ -71,11 +89,234 @@ export default {
             return jsonResponse(
                 {
                     ok: true,
-                    settings
+                    settings,
+                    setPlans:
+                        getSetPlanSettings(settings)
                 },
                 200,
                 corsHeaders
             );
+        }
+
+
+        // ====================================================
+        // 公開: 特商法 事業者情報の開示請求
+        // ====================================================
+
+        if (
+            request.method === "POST" &&
+            url.pathname === "/api/disclosure-requests"
+        ) {
+            try {
+                if (
+                    origin &&
+                    !ALLOWED_ORIGINS.includes(origin)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "許可されていないサイトです。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                const body = await request.json();
+
+                const turnstileToken =
+                    clean(
+                        body?.turnstileToken,
+                        2048
+                    );
+
+                const turnstileResult =
+                    await verifyTurnstile(
+                        env,
+                        turnstileToken,
+                        request
+                    );
+
+                if (!turnstileResult.ok) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "セキュリティ確認に失敗しました。ページを再読み込みしてもう一度お試しください。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                if (
+                    String(
+                        body?.website || ""
+                    ).trim() !== ""
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "送信できませんでした。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                const requesterName =
+                    clean(
+                        body?.requesterName,
+                        120
+                    );
+
+                const email =
+                    clean(
+                        body?.email,
+                        254
+                    );
+
+                const purpose =
+                    clean(
+                        body?.purpose,
+                        2000
+                    );
+
+                if (
+                    !requesterName ||
+                    !email
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "お名前と返信先メールアドレスを入力してください。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                const simpleEmailPattern =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (
+                    !simpleEmailPattern.test(email)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "メールアドレスの形式を確認してください。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                const insertResult =
+                    await env.DB.prepare(
+                        `
+                        INSERT INTO disclosure_requests (
+                            requester_name,
+                            email,
+                            purpose
+                        )
+                        VALUES (?, ?, ?)
+                        `
+                    )
+                    .bind(
+                        requesterName,
+                        email,
+                        purpose
+                    )
+                    .run();
+
+                const rowId =
+                    Number(
+                        insertResult?.meta?.last_row_id ||
+                        0
+                    );
+
+                const disclosureId =
+                    `LAW-${String(rowId).padStart(6, "0")}`;
+
+                await env.DB.prepare(
+                    `
+                    UPDATE disclosure_requests
+                    SET disclosure_id = ?
+                    WHERE id = ?
+                    `
+                )
+                .bind(
+                    disclosureId,
+                    rowId
+                )
+                .run();
+
+                let discordNotified = false;
+
+                if (
+                    env.DISCORD_BOT_TOKEN &&
+                    env.DISCORD_USER_ID
+                ) {
+                    try {
+                        await sendDisclosureNotification(
+                            env,
+                            disclosureId,
+                            {
+                                requesterName,
+                                email,
+                                purpose
+                            }
+                        );
+
+                        discordNotified = true;
+                    } catch (error) {
+                        console.error(
+                            "Disclosure Discord notify failed:",
+                            error
+                        );
+                    }
+                }
+
+                await env.DB.prepare(
+                    `
+                    UPDATE disclosure_requests
+                    SET discord_notified = ?
+                    WHERE id = ?
+                    `
+                )
+                .bind(
+                    discordNotified ? 1 : 0,
+                    rowId
+                )
+                .run();
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        disclosureId
+                    },
+                    201,
+                    corsHeaders
+                );
+            } catch (error) {
+                console.error(
+                    "Disclosure request failed:",
+                    error
+                );
+
+                return jsonResponse(
+                    {
+                        ok: false,
+                        error:
+                            "送信に失敗しました。時間をおいてもう一度お試しください。"
+                    },
+                    500,
+                    corsHeaders
+                );
+            }
         }
 
 
@@ -104,6 +345,31 @@ export default {
 
                 const body = await request.json();
                 const data = body?.request;
+
+                const turnstileToken =
+                    clean(
+                        body?.turnstileToken,
+                        2048
+                    );
+
+                const turnstileResult =
+                    await verifyTurnstile(
+                        env,
+                        turnstileToken,
+                        request
+                    );
+
+                if (!turnstileResult.ok) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "セキュリティ確認に失敗しました。ページを再読み込みしてもう一度お試しください。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
 
                 if (
                     !data ||
@@ -170,6 +436,48 @@ export default {
                         409,
                         corsHeaders
                     );
+                }
+
+                if (serviceKey === "set") {
+                    const planKey =
+                        clean(
+                            estimate?.set?.planKey,
+                            50
+                        );
+
+                    const requirements =
+                        SET_PLAN_REQUIREMENTS[planKey];
+
+                    if (!requirements) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error: "セット内容が正しくありません。"
+                            },
+                            400,
+                            corsHeaders
+                        );
+                    }
+
+                    const stoppedComponents =
+                        requirements.filter(
+                            key =>
+                                settings[key] === false
+                        );
+
+                    if (
+                        stoppedComponents.length > 0
+                    ) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error:
+                                    "このセットに含まれるサービスが現在受付停止中です。"
+                            },
+                            409,
+                            corsHeaders
+                        );
+                    }
                 }
 
                 const activityName =
@@ -343,8 +651,7 @@ export default {
                 return jsonResponse(
                     {
                         ok: true,
-                        requestId,
-                        discordNotified
+                        requestId
                     },
                     200,
                     corsHeaders
@@ -583,6 +890,78 @@ export default {
             }
 
 
+
+            // 管理者メモ
+            const noteMatch =
+                url.pathname.match(
+                    /^\/api\/admin\/requests\/([^/]+)\/note$/
+                );
+
+            if (
+                request.method === "PUT" &&
+                noteMatch
+            ) {
+                const requestId =
+                    decodeURIComponent(noteMatch[1]);
+
+                const body =
+                    await request.json();
+
+                const note =
+                    clean(body?.note, 10000);
+
+                const exists =
+                    await env.DB
+                        .prepare(`
+                            SELECT request_id
+                            FROM requests
+                            WHERE request_id = ?
+                            LIMIT 1
+                        `)
+                        .bind(requestId)
+                        .first();
+
+                if (!exists) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "依頼が見つかりません。"
+                        },
+                        404,
+                        corsHeaders
+                    );
+                }
+
+                await env.DB
+                    .prepare(`
+                        INSERT INTO request_admin (
+                            request_id,
+                            admin_note,
+                            updated_at
+                        )
+                        VALUES (?, ?, CURRENT_TIMESTAMP)
+                        ON CONFLICT(request_id)
+                        DO UPDATE SET
+                            admin_note = excluded.admin_note,
+                            updated_at = CURRENT_TIMESTAMP
+                    `)
+                    .bind(
+                        requestId,
+                        note
+                    )
+                    .run();
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        requestId
+                    },
+                    200,
+                    corsHeaders
+                );
+            }
+
+
             // 依頼詳細
             const detailMatch =
                 url.pathname.match(
@@ -599,9 +978,17 @@ export default {
                 const item =
                     await env.DB
                         .prepare(`
-                            SELECT *
+                            SELECT
+                                requests.*,
+                                COALESCE(
+                                    request_admin.admin_note,
+                                    ''
+                                ) AS admin_note
                             FROM requests
-                            WHERE request_id = ?
+                            LEFT JOIN request_admin
+                                ON request_admin.request_id =
+                                   requests.request_id
+                            WHERE requests.request_id = ?
                             LIMIT 1
                         `)
                         .bind(requestId)
@@ -640,6 +1027,125 @@ export default {
         );
     }
 };
+
+
+
+async function verifyTurnstile(
+    env,
+    token,
+    request
+) {
+    if (
+        !env.TURNSTILE_SECRET_KEY ||
+        !token
+    ) {
+        return {
+            ok: false,
+            reason: "missing-secret-or-token"
+        };
+    }
+
+    try {
+        const response =
+            await fetch(
+                "https://challenges.cloudflare.com/turnstile/v0/siteverify",
+                {
+                    method: "POST",
+
+                    headers: {
+                        "Content-Type":
+                            "application/x-www-form-urlencoded"
+                    },
+
+                    body:
+                        new URLSearchParams({
+                            secret:
+                                env.TURNSTILE_SECRET_KEY,
+
+                            response:
+                                token,
+
+                            remoteip:
+                                request.headers.get(
+                                    "CF-Connecting-IP"
+                                ) || ""
+                        })
+                }
+            );
+
+        if (!response.ok) {
+            console.error(
+                "Turnstile Siteverify HTTP error:",
+                response.status
+            );
+
+            return {
+                ok: false,
+                reason: "siteverify-http-error"
+            };
+        }
+
+        const result =
+            await response.json();
+
+        if (!result.success) {
+            console.warn(
+                "Turnstile rejected token:",
+                result["error-codes"] || []
+            );
+
+            return {
+                ok: false,
+                reason: "challenge-failed"
+            };
+        }
+
+        if (
+            result.hostname !==
+            TURNSTILE_EXPECTED_HOSTNAME
+        ) {
+            console.warn(
+                "Turnstile hostname mismatch:",
+                result.hostname
+            );
+
+            return {
+                ok: false,
+                reason: "hostname-mismatch"
+            };
+        }
+
+        if (
+            result.action !==
+            TURNSTILE_EXPECTED_ACTION
+        ) {
+            console.warn(
+                "Turnstile action mismatch:",
+                result.action
+            );
+
+            return {
+                ok: false,
+                reason: "action-mismatch"
+            };
+        }
+
+        return {
+            ok: true
+        };
+
+    } catch (error) {
+        console.error(
+            "Turnstile verification error:",
+            error
+        );
+
+        return {
+            ok: false,
+            reason: "verification-error"
+        };
+    }
+}
 
 
 async function getServiceSettings(env) {
@@ -686,6 +1192,24 @@ async function getServiceSettings(env) {
     return defaults;
 }
 
+
+
+function getSetPlanSettings(settings) {
+    const result = {};
+
+    for (
+        const [planKey, requirements]
+        of Object.entries(SET_PLAN_REQUIREMENTS)
+    ) {
+        result[planKey] =
+            settings.set !== false &&
+            requirements.every(
+                key => settings[key] !== false
+            );
+    }
+
+    return result;
+}
 
 function isAdmin(request, env) {
     if (!env.ADMIN_TOKEN) {
@@ -738,6 +1262,112 @@ function jsonResponse(
             }
         }
     );
+}
+
+
+async function sendDisclosureNotification(
+    env,
+    disclosureId,
+    data
+) {
+    const dmResponse =
+        await fetch(
+            "https://discord.com/api/v10/users/@me/channels",
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bot ${env.DISCORD_BOT_TOKEN}`,
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    recipient_id:
+                        env.DISCORD_USER_ID
+                })
+            }
+        );
+
+    if (!dmResponse.ok) {
+        const errorText =
+            await dmResponse.text();
+
+        throw new Error(
+            `Discord DM error: ${dmResponse.status} ${errorText}`
+        );
+    }
+
+    const dm =
+        await dmResponse.json();
+
+    const messageResponse =
+        await fetch(
+            `https://discord.com/api/v10/channels/${dm.id}/messages`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bot ${env.DISCORD_BOT_TOKEN}`,
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    content:
+                        "📮 **特商法の事業者情報 開示請求が届きました**",
+
+                    embeds: [
+                        {
+                            title:
+                                disclosureId,
+
+                            fields: [
+                                {
+                                    name: "請求者",
+                                    value:
+                                        data.requesterName,
+                                    inline: true
+                                },
+
+                                {
+                                    name: "返信先",
+                                    value:
+                                        data.email,
+                                    inline: false
+                                },
+
+                                {
+                                    name: "備考・用途",
+                                    value:
+                                        (
+                                            data.purpose ||
+                                            "未入力"
+                                        ).slice(
+                                            0,
+                                            1000
+                                        ),
+                                    inline: false
+                                }
+                            ]
+                        }
+                    ]
+                })
+            }
+        );
+
+    if (!messageResponse.ok) {
+        const errorText =
+            await messageResponse.text();
+
+        throw new Error(
+            `Discord message error: ${messageResponse.status} ${errorText}`
+        );
+    }
 }
 
 
@@ -802,6 +1432,9 @@ async function sendDiscordNotification(
                             title:
                                 requestId,
 
+                            url:
+                                `${ADMIN_PAGE_URL}?request=${encodeURIComponent(requestId)}`,
+
                             fields: [
                                 {
                                     name: "依頼者",
@@ -832,6 +1465,13 @@ async function sendDiscordNotification(
                                         data.deadline ||
                                         "指定なし",
                                     inline: true
+                                },
+
+                                {
+                                    name: "管理画面",
+                                    value:
+                                        `[この依頼を開く](${ADMIN_PAGE_URL}?request=${encodeURIComponent(requestId)})`,
+                                    inline: false
                                 }
                             ],
 

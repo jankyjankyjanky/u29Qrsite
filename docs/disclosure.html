@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>事業者情報の開示請求 | なずな</title>
+    <link rel="stylesheet" href="style.css?v=20">
+    <link rel="stylesheet" href="legal.css?v=2">
+    <link rel="stylesheet" href="disclosure.css?v=1">
+
+    <script src="turnstile-config.js?v=1"></script>
+    <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
+</head>
+<body class="legal-page">
+
+<header>
+    <h1>なずな</h1>
+</header>
+
+<main class="legal-container">
+    <section class="legal-card">
+        <h2>事業者情報の開示請求</h2>
+
+        <p>
+            特定商取引法に基づく事業者の氏名・住所・電話番号の
+            開示を希望される場合は、以下からご請求ください。
+        </p>
+
+        <div class="legal-note">
+            内容を確認後、依頼申込みの判断前に確認できるよう、
+            返信先メールアドレスへ必要事項をご案内します。
+        </div>
+
+        <form id="disclosure_form">
+            <div class="disclosure-field">
+                <label for="requester_name">
+                    お名前 <span class="required">必須</span>
+                </label>
+                <input id="requester_name" maxlength="120" required>
+            </div>
+
+            <div class="disclosure-field">
+                <label for="email">
+                    返信先メールアドレス <span class="required">必須</span>
+                </label>
+                <input id="email" type="email" maxlength="254" required>
+            </div>
+
+            <div class="disclosure-field">
+                <label for="purpose">
+                    備考・開示を希望する理由
+                    <span class="optional">任意</span>
+                </label>
+                <textarea
+                    id="purpose"
+                    maxlength="2000"
+                    rows="5"
+                    placeholder="例：依頼を検討しているため"
+                ></textarea>
+            </div>
+
+            <div class="honeypot-wrap" aria-hidden="true">
+                <label for="website">Webサイト</label>
+                <input id="website" autocomplete="off" tabindex="-1">
+            </div>
+
+            <div id="disclosure_turnstile"></div>
+
+            <p id="disclosure_error" class="disclosure-error" hidden></p>
+            <p id="disclosure_success" class="disclosure-success" hidden></p>
+
+            <button type="submit" id="disclosure_submit" class="btn-submit">
+                開示を請求する
+            </button>
+        </form>
+
+        <p class="disclosure-privacy-note">
+            送信された情報は、開示請求への対応・記録・
+            不正利用防止のために使用します。
+            詳細は
+            <a href="privacy.html">プライバシー方針</a>
+            をご確認ください。
+        </p>
+
+        <a class="legal-back" href="tokusho.html">← 特商法表記へ戻る</a>
+    </section>
+</main>
+
+<footer class="site-footer">
+    <a href="terms.html">依頼規約</a>
+    <span>・</span>
+    <a href="privacy.html">プライバシー方針</a>
+    <span>・</span>
+    <a href="tokusho.html">特商法表記</a>
+</footer>
+
+<script src="disclosure.js?v=1"></script>
+</body>
+</html>

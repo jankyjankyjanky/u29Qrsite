@@ -34,7 +34,7 @@ const TURNSTILE_EXPECTED_ACTION =
     "submit_request";
 
 const ADMIN_PAGE_URL =
-    "https://jankyjankyjanky.github.io/u29Qrsite/admin.html";
+    "https://jankyjankyjanky.github.io/nazuna-request-site/admin.html";
 
 export default {
     async fetch(request, env) {
@@ -96,6 +96,227 @@ export default {
                 200,
                 corsHeaders
             );
+        }
+
+
+        // ====================================================
+        // 公開: 特商法 事業者情報の開示請求
+        // ====================================================
+
+        if (
+            request.method === "POST" &&
+            url.pathname === "/api/disclosure-requests"
+        ) {
+            try {
+                if (
+                    origin &&
+                    !ALLOWED_ORIGINS.includes(origin)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "許可されていないサイトです。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                const body = await request.json();
+
+                const turnstileToken =
+                    clean(
+                        body?.turnstileToken,
+                        2048
+                    );
+
+                const turnstileResult =
+                    await verifyTurnstile(
+                        env,
+                        turnstileToken,
+                        request
+                    );
+
+                if (!turnstileResult.ok) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "セキュリティ確認に失敗しました。ページを再読み込みしてもう一度お試しください。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                if (
+                    String(
+                        body?.website || ""
+                    ).trim() !== ""
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error: "送信できませんでした。"
+                        },
+                        403,
+                        corsHeaders
+                    );
+                }
+
+                const requesterName =
+                    clean(
+                        body?.requesterName,
+                        120
+                    );
+
+                const email =
+                    clean(
+                        body?.email,
+                        254
+                    );
+
+                const purpose =
+                    clean(
+                        body?.purpose,
+                        2000
+                    );
+
+                if (
+                    !requesterName ||
+                    !email
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "お名前と返信先メールアドレスを入力してください。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                const simpleEmailPattern =
+                    /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+
+                if (
+                    !simpleEmailPattern.test(email)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "メールアドレスの形式を確認してください。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                const insertResult =
+                    await env.DB.prepare(
+                        `
+                        INSERT INTO disclosure_requests (
+                            requester_name,
+                            email,
+                            purpose
+                        )
+                        VALUES (?, ?, ?)
+                        `
+                    )
+                    .bind(
+                        requesterName,
+                        email,
+                        purpose
+                    )
+                    .run();
+
+                const rowId =
+                    Number(
+                        insertResult?.meta?.last_row_id ||
+                        0
+                    );
+
+                const disclosureId =
+                    `LAW-${String(rowId).padStart(6, "0")}`;
+
+                await env.DB.prepare(
+                    `
+                    UPDATE disclosure_requests
+                    SET disclosure_id = ?
+                    WHERE id = ?
+                    `
+                )
+                .bind(
+                    disclosureId,
+                    rowId
+                )
+                .run();
+
+                let discordNotified = false;
+
+                if (
+                    env.DISCORD_BOT_TOKEN &&
+                    env.DISCORD_USER_ID
+                ) {
+                    try {
+                        await sendDisclosureNotification(
+                            env,
+                            disclosureId,
+                            {
+                                requesterName,
+                                email,
+                                purpose
+                            }
+                        );
+
+                        discordNotified = true;
+                    } catch (error) {
+                        console.error(
+                            "Disclosure Discord notify failed:",
+                            error
+                        );
+                    }
+                }
+
+                await env.DB.prepare(
+                    `
+                    UPDATE disclosure_requests
+                    SET discord_notified = ?
+                    WHERE id = ?
+                    `
+                )
+                .bind(
+                    discordNotified ? 1 : 0,
+                    rowId
+                )
+                .run();
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        disclosureId
+                    },
+                    201,
+                    corsHeaders
+                );
+            } catch (error) {
+                console.error(
+                    "Disclosure request failed:",
+                    error
+                );
+
+                return jsonResponse(
+                    {
+                        ok: false,
+                        error:
+                            "送信に失敗しました。時間をおいてもう一度お試しください。"
+                    },
+                    500,
+                    corsHeaders
+                );
+            }
         }
 
 
@@ -1041,6 +1262,112 @@ function jsonResponse(
             }
         }
     );
+}
+
+
+async function sendDisclosureNotification(
+    env,
+    disclosureId,
+    data
+) {
+    const dmResponse =
+        await fetch(
+            "https://discord.com/api/v10/users/@me/channels",
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bot ${env.DISCORD_BOT_TOKEN}`,
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    recipient_id:
+                        env.DISCORD_USER_ID
+                })
+            }
+        );
+
+    if (!dmResponse.ok) {
+        const errorText =
+            await dmResponse.text();
+
+        throw new Error(
+            `Discord DM error: ${dmResponse.status} ${errorText}`
+        );
+    }
+
+    const dm =
+        await dmResponse.json();
+
+    const messageResponse =
+        await fetch(
+            `https://discord.com/api/v10/channels/${dm.id}/messages`,
+            {
+                method: "POST",
+
+                headers: {
+                    "Authorization":
+                        `Bot ${env.DISCORD_BOT_TOKEN}`,
+
+                    "Content-Type":
+                        "application/json"
+                },
+
+                body: JSON.stringify({
+                    content:
+                        "📮 **特商法の事業者情報 開示請求が届きました**",
+
+                    embeds: [
+                        {
+                            title:
+                                disclosureId,
+
+                            fields: [
+                                {
+                                    name: "請求者",
+                                    value:
+                                        data.requesterName,
+                                    inline: true
+                                },
+
+                                {
+                                    name: "返信先",
+                                    value:
+                                        data.email,
+                                    inline: false
+                                },
+
+                                {
+                                    name: "備考・用途",
+                                    value:
+                                        (
+                                            data.purpose ||
+                                            "未入力"
+                                        ).slice(
+                                            0,
+                                            1000
+                                        ),
+                                    inline: false
+                                }
+                            ]
+                        }
+                    ]
+                })
+            }
+        );
+
+    if (!messageResponse.ok) {
+        const errorText =
+            await messageResponse.text();
+
+        throw new Error(
+            `Discord message error: ${messageResponse.status} ${errorText}`
+        );
+    }
 }
 
 

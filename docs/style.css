@@ -495,3 +495,39 @@ input[type="number"] {
         grid-column: auto;
     }
 }
+
+
+/* v20: 支払い案内 */
+.payment-methods {
+    display: grid;
+    gap: 6px;
+    padding: 12px 14px;
+    margin: 12px 0;
+    background: #FFF8E1;
+    border-left: 4px solid #FFCA28;
+    border-radius: 7px;
+}
+
+.payment-methods strong {
+    color: #5D4037;
+    margin-bottom: 2px;
+}
+
+.payment-methods span::before {
+    content: "・";
+}
+
+.request-payment-note {
+    background: #FFF8E1;
+    border-left: 4px solid #FFCA28;
+    border-radius: 7px;
+    padding: 11px 12px;
+    margin-bottom: 18px;
+    line-height: 1.6;
+}
+
+.request-payment-note strong {
+    display: block;
+    color: #5D4037;
+    margin-bottom: 3px;
+}

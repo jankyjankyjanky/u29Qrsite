@@ -1,0 +1,103 @@
+
+.disclosure-field {
+    margin: 18px 0;
+}
+
+.disclosure-field label {
+    display: block;
+    font-weight: 700;
+    margin-bottom: 6px;
+    color: #5D4037;
+}
+
+.disclosure-field input,
+.disclosure-field textarea {
+    width: 100%;
+    box-sizing: border-box;
+    padding: 10px 12px;
+    border: 1px solid #D7CCC8;
+    border-radius: 7px;
+    font: inherit;
+    background: #fff;
+}
+
+.required {
+    color: #C62828;
+    font-size: .78rem;
+}
+
+.optional {
+    color: #757575;
+    font-size: .78rem;
+}
+
+.honeypot-wrap {
+    position: absolute;
+    left: -9999px;
+    width: 1px;
+    height: 1px;
+    overflow: hidden;
+}
+
+.disclosure-error,
+.disclosure-success {
+    margin: 12px 0;
+    padding: 10px 12px;
+    border-radius: 7px;
+}
+
+.disclosure-error {
+    background: #FFEBEE;
+    color: #B71C1C;
+}
+
+.disclosure-success {
+    background: #E8F5E9;
+    color: #1B5E20;
+}
+
+.disclosure-privacy-note {
+    margin-top: 16px;
+    color: #616161;
+    font-size: .86rem;
+    line-height: 1.6;
+}
+
+.legal-table {
+    display: grid;
+    grid-template-columns: minmax(150px, 210px) 1fr;
+    border-top: 1px solid #E0E0E0;
+    margin-top: 18px;
+}
+
+.legal-table dt,
+.legal-table dd {
+    margin: 0;
+    padding: 13px 12px;
+    border-bottom: 1px solid #E0E0E0;
+}
+
+.legal-table dt {
+    font-weight: 700;
+    background: #F9F6F0;
+    color: #5D4037;
+}
+
+.legal-table dd {
+    line-height: 1.65;
+}
+
+@media (max-width: 640px) {
+    .legal-table {
+        grid-template-columns: 1fr;
+    }
+
+    .legal-table dt {
+        border-bottom: 0;
+        padding-bottom: 5px;
+    }
+
+    .legal-table dd {
+        padding-top: 5px;
+    }
+}
