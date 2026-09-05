@@ -349,6 +349,53 @@ function getDiscountRate() {
     return 1;
 }
 
+
+// ============================================================
+// クレジットなし（固定 +3,000円 / 割引対象外）
+// ============================================================
+
+const NO_CREDIT_PRICE = 3000;
+
+const NO_CREDIT_OPTION_IDS = {
+    mix: "mix_opt_no_credit",
+    mv: "mv_opt_no_credit",
+    movie: "movie_opt_no_credit",
+    illust: "illust_opt_no_credit",
+    set: "set_opt_no_credit"
+};
+
+function getNoCreditAddon(tab = getCurrentTab()) {
+    const id = NO_CREDIT_OPTION_IDS[tab];
+
+    if (!id) {
+        return 0;
+    }
+
+    const checkbox =
+        document.getElementById(id);
+
+    return checkbox?.checked
+        ? NO_CREDIT_PRICE
+        : 0;
+}
+
+function addNoCreditLine(
+    lines,
+    tab = getCurrentTab()
+) {
+    const addon =
+        getNoCreditAddon(tab);
+
+    if (addon > 0) {
+        lines.push(
+            `・クレジットなし (+${addon.toLocaleString()}円 / 固定料金)`
+        );
+    }
+
+    return addon;
+}
+
+
 function updatePriceTags() {
     const rate = getDiscountRate();
 
