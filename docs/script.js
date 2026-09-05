@@ -715,44 +715,133 @@ function addNoCreditLine(
 
 
 function updatePriceTags() {
-    const rate = getDiscountRate();
+    const currentTab =
+        getCurrentTab();
 
-    document.querySelectorAll(".price-tag").forEach(tag => {
-        // イラストと固定料金は割引対象外
-        if (
-            tag.closest(".illust-sub-form") ||
-            tag.classList.contains("fixed-price-tag")
-        ) return;
+    const normalRate =
+        getDiscountRate();
 
-        if (!tag.dataset.originalPrice) {
-            const match = tag.textContent.match(/[+＋]?\s*[\d,]+/);
-            if (!match) return;
+    // %OFFキャンペーンは、通常タブでは学割と同じように
+    // 各料金にも「元価格 → 割引後価格」を表示する。
+    //
+    // セットは「セット割引後の合計」にキャンペーンを適用するため、
+    // 個別料金まで割引表示すると計算順が誤解されるので合計のみ表示。
+    //
+    // ○円OFFキャンペーンも注文全体への固定額割引なので、
+    // 個別料金には割引後価格を表示しない。
+    const campaignPercentDisplay =
+        isCampaignSelected() &&
+        CAMPAIGN_STATE.discountType ===
+            "percent" &&
+        currentTab !== "set";
 
-            tag.dataset.originalPrice = match[0]
-                .replace(/,/g, "")
-                .replace(/＋/g, "+")
-                .replace(/\s/g, "");
-        }
+    const campaignRate =
+        campaignPercentDisplay
+            ? Math.max(
+                  0,
+                  1 -
+                      Number(
+                          CAMPAIGN_STATE.discountValue ||
+                          0
+                      ) /
+                          100
+              )
+            : 1;
 
-        const originalText = tag.dataset.originalPrice;
-        const hasPlus = originalText.startsWith("+");
-        const originalPrice = parseInt(originalText.replace("+", ""), 10);
+    const displayRate =
+        campaignPercentDisplay
+            ? campaignRate
+            : normalRate;
 
-        if (Number.isNaN(originalPrice)) return;
+    document
+        .querySelectorAll(".price-tag")
+        .forEach(tag => {
+            // クレジットなし等の固定料金は常に割引対象外。
+            if (
+                tag.classList.contains(
+                    "fixed-price-tag"
+                )
+            ) {
+                return;
+            }
 
-        const prefix = hasPlus ? "+" : "";
+            // 学割・初回利用者割引ではイラストは割引対象外。
+            // %OFFキャンペーンではイラストも対象。
+            if (
+                tag.closest(
+                    ".illust-sub-form"
+                ) &&
+                !campaignPercentDisplay
+            ) {
+                return;
+            }
 
-        if (rate === 1 || originalPrice === 0) {
-            tag.innerHTML = `${prefix}${originalPrice.toLocaleString()}円`;
-            return;
-        }
+            if (
+                !tag.dataset.originalPrice
+            ) {
+                const match =
+                    tag.textContent.match(
+                        /[+＋]?\s*[\d,]+/
+                    );
 
-        const discountedPrice = Math.floor(originalPrice * rate);
+                if (!match) {
+                    return;
+                }
 
-        tag.innerHTML =
-            `<span class="price-original">${prefix}${originalPrice.toLocaleString()}円</span>` +
-            `<span class="price-discounted">${prefix}${discountedPrice.toLocaleString()}円</span>`;
-    });
+                tag.dataset.originalPrice =
+                    match[0]
+                        .replace(/,/g, "")
+                        .replace(/＋/g, "+")
+                        .replace(/\s/g, "");
+            }
+
+            const originalText =
+                tag.dataset.originalPrice;
+
+            const hasPlus =
+                originalText.startsWith(
+                    "+"
+                );
+
+            const originalPrice =
+                parseInt(
+                    originalText.replace(
+                        "+",
+                        ""
+                    ),
+                    10
+                );
+
+            if (
+                Number.isNaN(
+                    originalPrice
+                )
+            ) {
+                return;
+            }
+
+            const prefix =
+                hasPlus ? "+" : "";
+
+            if (
+                displayRate === 1 ||
+                originalPrice === 0
+            ) {
+                tag.innerHTML =
+                    `${prefix}${originalPrice.toLocaleString()}円`;
+                return;
+            }
+
+            const discountedPrice =
+                Math.floor(
+                    originalPrice *
+                        displayRate
+                );
+
+            tag.innerHTML =
+                `<span class="price-original">${prefix}${originalPrice.toLocaleString()}円</span>` +
+                `<span class="price-discounted">${prefix}${discountedPrice.toLocaleString()}円</span>`;
+        });
 }
 
 
@@ -896,7 +985,13 @@ function updateIllust(prefix) {
         if (label) label.style.display = "inline";
 
         const priceElement = document.getElementById(`price_${range}_${prefix}`);
-        if (priceElement) priceElement.textContent = `${price.toLocaleString()}円`;
+        if (priceElement) {
+            priceElement.textContent =
+                `${price.toLocaleString()}円`;
+
+            priceElement.dataset.originalPrice =
+                String(price);
+        }
     });
 
     Object.entries(labels).forEach(([range, label]) => {
