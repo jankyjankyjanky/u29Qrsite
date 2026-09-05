@@ -53,6 +53,22 @@ let SERVICE_AVAILABILITY = {
     set: true
 };
 
+let CAMPAIGN_STATE = {
+    active: false,
+    status: "disabled",
+    name: "キャンペーン割引",
+    discountType: "percent",
+    discountValue: 0,
+    limitType: "period",
+    startAt: null,
+    endAt: null,
+    maxUses: null,
+    remaining: null,
+    updatedAt: ""
+};
+
+let CAMPAIGN_LOADED = false;
+
 
 const SET_PLAN_REQUIREMENTS = {
     mix_mv: ["mix", "mv"],
@@ -198,7 +214,17 @@ async function loadServiceAvailability() {
             };
         }
 
+        if (data?.campaign) {
+            CAMPAIGN_STATE = {
+                ...CAMPAIGN_STATE,
+                ...data.campaign
+            };
+        }
+
+        CAMPAIGN_LOADED = true;
+
         applyServiceAvailability();
+        applyCampaignAvailability();
     } catch (error) {
         console.warn("受付状況を取得できませんでした。", error);
     }
@@ -289,6 +315,8 @@ window.addEventListener("DOMContentLoaded", () => {
         calcTotal();
     });
 
+    setupDiscountExclusivity();
+
     switchTab();
     updateSetPanels();
     updatePriceTags();
@@ -339,14 +367,304 @@ function switchTab() {
     calcTotal();
 }
 
+function isCampaignSelected() {
+    return Boolean(
+        CAMPAIGN_STATE.active &&
+        document.getElementById(
+            "chk_campaign"
+        )?.checked
+    );
+}
+
+
 function getDiscountRate() {
-    const isStudent = document.getElementById("chk_student")?.checked ?? false;
-    const isFirst = document.getElementById("chk_first")?.checked ?? false;
+    if (isCampaignSelected()) {
+        return 1;
+    }
+
+    const isStudent =
+        document.getElementById(
+            "chk_student"
+        )?.checked ?? false;
+
+    const isFirst =
+        document.getElementById(
+            "chk_first"
+        )?.checked ?? false;
 
     if (isStudent && isFirst) return 0.4;
     if (isStudent) return 0.5;
     if (isFirst) return 0.8;
     return 1;
+}
+
+
+function setupDiscountExclusivity() {
+    const student =
+        document.getElementById(
+            "chk_student"
+        );
+
+    const first =
+        document.getElementById(
+            "chk_first"
+        );
+
+    const campaign =
+        document.getElementById(
+            "chk_campaign"
+        );
+
+    campaign?.addEventListener(
+        "change",
+        () => {
+            if (campaign.checked) {
+                if (student) {
+                    student.checked = false;
+                }
+
+                if (first) {
+                    first.checked = false;
+                }
+            }
+
+            updatePriceTags();
+            calcTotal();
+        }
+    );
+
+    [student, first]
+        .filter(Boolean)
+        .forEach(input => {
+            input.addEventListener(
+                "change",
+                () => {
+                    if (
+                        input.checked &&
+                        campaign
+                    ) {
+                        campaign.checked = false;
+                    }
+
+                    updatePriceTags();
+                    calcTotal();
+                }
+            );
+        });
+}
+
+
+function applyCampaignAvailability() {
+    const area =
+        document.getElementById(
+            "campaign_discount_area"
+        );
+
+    const checkbox =
+        document.getElementById(
+            "chk_campaign"
+        );
+
+    if (!area || !checkbox) {
+        return;
+    }
+
+    const active =
+        Boolean(
+            CAMPAIGN_LOADED &&
+            CAMPAIGN_STATE.active
+        );
+
+    area.hidden = !active;
+    checkbox.disabled = !active;
+
+    if (!active) {
+        checkbox.checked = false;
+        calcTotal();
+        return;
+    }
+
+    const name =
+        document.getElementById(
+            "campaign_discount_name"
+        );
+
+    const badge =
+        document.getElementById(
+            "campaign_discount_badge"
+        );
+
+    const detail =
+        document.getElementById(
+            "campaign_discount_detail"
+        );
+
+    if (name) {
+        name.textContent =
+            CAMPAIGN_STATE.name ||
+            "キャンペーン割引";
+    }
+
+    if (badge) {
+        badge.textContent =
+            CAMPAIGN_STATE.discountType ===
+            "percent"
+                ? `${Number(
+                      CAMPAIGN_STATE.discountValue
+                  ).toLocaleString()}%OFF`
+                : `${Number(
+                      CAMPAIGN_STATE.discountValue
+                  ).toLocaleString()}円OFF`;
+    }
+
+    if (detail) {
+        if (
+            CAMPAIGN_STATE.limitType ===
+            "count"
+        ) {
+            detail.textContent =
+                `先着限定 / 残り ${Math.max(
+                    0,
+                    Number(
+                        CAMPAIGN_STATE.remaining ||
+                        0
+                    )
+                ).toLocaleString()}名`;
+        } else {
+            const end =
+                Number(
+                    CAMPAIGN_STATE.endAt
+                );
+
+            detail.textContent =
+                Number.isFinite(end)
+                    ? `期間限定 / ${new Date(
+                          end
+                      ).toLocaleString(
+                          "ja-JP"
+                      )}まで`
+                    : "期間限定";
+        }
+    }
+
+    if (checkbox.checked) {
+        const student =
+            document.getElementById(
+                "chk_student"
+            );
+
+        const first =
+            document.getElementById(
+                "chk_first"
+            );
+
+        if (student) {
+            student.checked = false;
+        }
+
+        if (first) {
+            first.checked = false;
+        }
+    }
+
+    calcTotal();
+}
+
+
+function calculateCampaignDiscount(
+    beforeTotal,
+    fixedExcluded = 0
+) {
+    const before =
+        Math.max(
+            0,
+            Math.floor(
+                Number(beforeTotal) || 0
+            )
+        );
+
+    const excluded =
+        Math.max(
+            0,
+            Math.min(
+                before,
+                Math.floor(
+                    Number(fixedExcluded) ||
+                    0
+                )
+            )
+        );
+
+    const eligible =
+        Math.max(
+            0,
+            before - excluded
+        );
+
+    if (!isCampaignSelected()) {
+        return {
+            applied: false,
+            name: "",
+            discountType: "",
+            discountValue: 0,
+            beforeTotal: before,
+            eligibleTotal: eligible,
+            fixedExcluded: excluded,
+            discountAmount: 0,
+            finalTotal: before,
+            limitType: "",
+            remaining: null,
+            endAt: null
+        };
+    }
+
+    const discountValue =
+        Math.max(
+            0,
+            Number(
+                CAMPAIGN_STATE.discountValue
+            ) || 0
+        );
+
+    const discountAmount =
+        CAMPAIGN_STATE.discountType ===
+        "amount"
+            ? Math.min(
+                  eligible,
+                  Math.floor(discountValue)
+              )
+            : Math.floor(
+                  eligible *
+                  discountValue /
+                  100
+              );
+
+    return {
+        applied: true,
+        name:
+            CAMPAIGN_STATE.name ||
+            "キャンペーン割引",
+        discountType:
+            CAMPAIGN_STATE.discountType,
+        discountValue,
+        beforeTotal: before,
+        eligibleTotal: eligible,
+        fixedExcluded: excluded,
+        discountAmount,
+        finalTotal:
+            Math.max(
+                0,
+                before - discountAmount
+            ),
+        limitType:
+            CAMPAIGN_STATE.limitType,
+        remaining:
+            CAMPAIGN_STATE.remaining,
+        endAt:
+            CAMPAIGN_STATE.endAt,
+        updatedAt:
+            CAMPAIGN_STATE.updatedAt || ""
+    };
 }
 
 
@@ -941,6 +1259,22 @@ function calcTotal() {
         lines = result.lines;
     }
 
+    const campaignResult =
+        calculateCampaignDiscount(
+            finalTotal,
+            getNoCreditAddon(currentTab)
+        );
+
+    if (campaignResult.applied) {
+        finalTotal =
+            campaignResult.finalTotal;
+
+        lines = [
+            ...lines,
+            `・${campaignResult.name}: -${campaignResult.discountAmount.toLocaleString()}円`
+        ];
+    }
+
     const info = TAB_INFO[currentTab];
 
     const title = document.getElementById("total-title");
@@ -953,16 +1287,27 @@ function calcTotal() {
     if (price) {
         if (currentTab === "set" && setResult?.planLabel) {
             if (setResult.meetsMinimum) {
-                price.innerHTML =
-                    `<span class="total-original">${setResult.beforeSetDiscount.toLocaleString()}円</span>` +
-                    `<span class="total-discounted">${setResult.finalTotal.toLocaleString()}円</span>`;
+                if (campaignResult.applied) {
+                    price.innerHTML =
+                        `<span class="total-original">${campaignResult.beforeTotal.toLocaleString()}円</span>` +
+                        `<span class="total-discounted">${campaignResult.finalTotal.toLocaleString()}円</span>`;
+                } else {
+                    price.innerHTML =
+                        `<span class="total-original">${setResult.beforeSetDiscount.toLocaleString()}円</span>` +
+                        `<span class="total-discounted">${setResult.finalTotal.toLocaleString()}円</span>`;
+                }
             } else {
                 price.innerHTML =
                     `<span class="total-current">${setResult.beforeSetDiscount.toLocaleString()}円</span>` +
                     `<span class="minimum-warning">最低注文額を満たしていません。</span>`;
             }
+        } else if (campaignResult.applied) {
+            price.innerHTML =
+                `<span class="total-original">${campaignResult.beforeTotal.toLocaleString()}円</span>` +
+                `<span class="total-discounted">${campaignResult.finalTotal.toLocaleString()}円</span>`;
         } else {
-            price.textContent = `${finalTotal.toLocaleString()} 円`;
+            price.textContent =
+                `${finalTotal.toLocaleString()} 円`;
         }
     }
 
@@ -981,7 +1326,8 @@ function captureEstimatorState(currentTab = getCurrentTab()) {
 
     const targets = [
         document.getElementById("chk_student"),
-        document.getElementById("chk_first")
+        document.getElementById("chk_first"),
+        document.getElementById("chk_campaign")
     ];
 
     const section = document.getElementById(`sec_${currentTab}`);
@@ -1114,8 +1460,27 @@ function getCurrentEstimateData() {
         lines = result.lines;
     }
 
+    const campaignResult =
+        calculateCampaignDiscount(
+            finalTotal,
+            getNoCreditAddon(currentTab)
+        );
+
+    if (campaignResult.applied) {
+        finalTotal =
+            campaignResult.finalTotal;
+
+        lines = [
+            ...lines,
+            `・${campaignResult.name}: -${campaignResult.discountAmount.toLocaleString()}円`
+        ];
+    }
+
+    const campaignApplied =
+        Boolean(campaignResult.applied);
+
     return {
-        version: 2,
+        version: 3,
         savedAt: new Date().toISOString(),
         tab: currentTab,
         title: info?.title || "",
@@ -1123,9 +1488,26 @@ function getCurrentEstimateData() {
         finalTotal,
         lines: [...extraLines, ...lines],
         discount: {
-            student: document.getElementById("chk_student")?.checked ?? false,
-            first: document.getElementById("chk_first")?.checked ?? false,
-            rate
+            student:
+                campaignApplied
+                    ? false
+                    : (
+                        document.getElementById("chk_student")?.checked ??
+                        false
+                    ),
+            first:
+                campaignApplied
+                    ? false
+                    : (
+                        document.getElementById("chk_first")?.checked ??
+                        false
+                    ),
+            rate:
+                campaignApplied
+                    ? 1
+                    : rate,
+            campaign:
+                campaignResult
         },
         set: setData,
         formState: captureEstimatorState(currentTab)

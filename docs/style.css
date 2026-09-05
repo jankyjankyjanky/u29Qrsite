@@ -531,3 +531,36 @@ input[type="number"] {
     color: #5D4037;
     margin-bottom: 3px;
 }
+
+
+/* v20.3: キャンペーン割引 */
+.campaign-discount-area {
+    margin-top: 10px;
+    padding: 10px 12px;
+    background: #FFF8E1;
+    border-left: 4px solid #FFCA28;
+    border-radius: 7px;
+}
+
+.campaign-discount-label {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+    align-items: center;
+    margin-bottom: 3px;
+}
+
+.campaign-discount-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 14px;
+    background: #FFCA28;
+    color: #3E2723;
+    font-size: .78rem;
+    font-weight: bold;
+}
+
+.campaign-discount-detail {
+    display: block;
+    margin-bottom: 2px;
+}

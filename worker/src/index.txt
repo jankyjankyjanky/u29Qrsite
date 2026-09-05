@@ -84,14 +84,21 @@ export default {
             request.method === "GET" &&
             url.pathname === "/api/public/settings"
         ) {
-            const settings = await getServiceSettings(env);
+            const [
+                settings,
+                campaign
+            ] = await Promise.all([
+                getServiceSettings(env),
+                getPublicCampaign(env)
+            ]);
 
             return jsonResponse(
                 {
                     ok: true,
                     settings,
                     setPlans:
-                        getSetPlanSettings(settings)
+                        getSetPlanSettings(settings),
+                    campaign
                 },
                 200,
                 corsHeaders
@@ -328,6 +335,8 @@ export default {
             request.method === "POST" &&
             url.pathname === "/api/requests"
         ) {
+            let reservedCampaignSlot = false;
+
             try {
                 if (
                     origin &&
@@ -522,6 +531,59 @@ export default {
                     );
                 }
 
+                const campaignValidation =
+                    await validateCampaignForRequest(
+                        env,
+                        estimate
+                    );
+
+                if (!campaignValidation.ok) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                campaignValidation.error
+                        },
+                        campaignValidation.status || 409,
+                        corsHeaders
+                    );
+                }
+
+                if (
+                    campaignValidation.applied &&
+                    campaignValidation.requiresReservation
+                ) {
+                    const reservation =
+                        await env.DB
+                            .prepare(`
+                                UPDATE campaign_settings
+                                SET
+                                    used_count = used_count + 1,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE
+                                    id = 1
+                                    AND enabled = 1
+                                    AND limit_type = 'count'
+                                    AND max_uses IS NOT NULL
+                                    AND used_count < max_uses
+                            `)
+                            .run();
+
+                    if (!reservation.meta.changes) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error:
+                                    "キャンペーンの先着上限に達しました。ページを再読み込みしてください。"
+                            },
+                            409,
+                            corsHeaders
+                        );
+                    }
+
+                    reservedCampaignSlot = true;
+                }
+
                 const result =
                     await env.DB
                         .prepare(`
@@ -602,6 +664,9 @@ export default {
                     )
                     .run();
 
+                // 依頼保存完了。先着枠を確定する。
+                reservedCampaignSlot = false;
+
                 let discordNotified = false;
 
                 if (
@@ -659,6 +724,30 @@ export default {
 
             } catch (error) {
                 console.error(error);
+
+                if (reservedCampaignSlot) {
+                    try {
+                        await env.DB
+                            .prepare(`
+                                UPDATE campaign_settings
+                                SET
+                                    used_count =
+                                        CASE
+                                            WHEN used_count > 0
+                                            THEN used_count - 1
+                                            ELSE 0
+                                        END,
+                                    updated_at = CURRENT_TIMESTAMP
+                                WHERE id = 1
+                            `)
+                            .run();
+                    } catch (rollbackError) {
+                        console.error(
+                            "Campaign rollback failed:",
+                            rollbackError
+                        );
+                    }
+                }
 
                 return jsonResponse(
                     {
@@ -765,6 +854,252 @@ export default {
                         ok: true,
                         serviceKey: key,
                         accepting
+                    },
+                    200,
+                    corsHeaders
+                );
+            }
+
+
+            // キャンペーン設定取得
+            if (
+                request.method === "GET" &&
+                url.pathname === "/api/admin/campaign"
+            ) {
+                const campaign =
+                    await getCampaignSettings(env);
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        campaign:
+                            buildAdminCampaignState(campaign)
+                    },
+                    200,
+                    corsHeaders
+                );
+            }
+
+
+            // キャンペーン設定保存
+            if (
+                request.method === "PUT" &&
+                url.pathname === "/api/admin/campaign"
+            ) {
+                const body =
+                    await request.json();
+
+                const enabled =
+                    Boolean(body?.enabled);
+
+                const name =
+                    clean(
+                        body?.name ||
+                        "キャンペーン割引",
+                        80
+                    );
+
+                const discountType =
+                    clean(body?.discountType, 20);
+
+                const discountValue =
+                    Number(body?.discountValue);
+
+                const limitType =
+                    clean(body?.limitType, 20);
+
+                if (
+                    !["percent", "amount"]
+                        .includes(discountType)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "割引方式が正しくありません。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                if (
+                    !Number.isInteger(discountValue) ||
+                    discountValue <= 0 ||
+                    (
+                        discountType === "percent" &&
+                        discountValue > 100
+                    ) ||
+                    (
+                        discountType === "amount" &&
+                        discountValue > 1000000
+                    )
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                discountType === "percent"
+                                    ? "割引率は1〜100%で設定してください。"
+                                    : "割引額は1〜1,000,000円で設定してください。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                if (
+                    !["period", "count"]
+                        .includes(limitType)
+                ) {
+                    return jsonResponse(
+                        {
+                            ok: false,
+                            error:
+                                "限定方法が正しくありません。"
+                        },
+                        400,
+                        corsHeaders
+                    );
+                }
+
+                let startAt = null;
+                let endAt = null;
+                let maxUses = null;
+
+                if (limitType === "period") {
+                    startAt =
+                        Number(body?.startAt);
+
+                    endAt =
+                        Number(body?.endAt);
+
+                    if (
+                        !Number.isFinite(startAt) ||
+                        !Number.isFinite(endAt) ||
+                        endAt <= startAt
+                    ) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error:
+                                    "開始日時・終了日時を正しく設定してください。"
+                            },
+                            400,
+                            corsHeaders
+                        );
+                    }
+                } else {
+                    maxUses =
+                        Number(body?.maxUses);
+
+                    if (
+                        !Number.isInteger(maxUses) ||
+                        maxUses <= 0 ||
+                        maxUses > 100000
+                    ) {
+                        return jsonResponse(
+                            {
+                                ok: false,
+                                error:
+                                    "先着人数は1〜100,000人で設定してください。"
+                            },
+                            400,
+                            corsHeaders
+                        );
+                    }
+                }
+
+                await env.DB
+                    .prepare(`
+                        INSERT INTO campaign_settings (
+                            id,
+                            enabled,
+                            name,
+                            discount_type,
+                            discount_value,
+                            limit_type,
+                            start_at,
+                            end_at,
+                            max_uses,
+                            used_count,
+                            updated_at
+                        )
+                        VALUES (
+                            1, ?, ?, ?, ?, ?, ?, ?, ?, 0,
+                            CURRENT_TIMESTAMP
+                        )
+                        ON CONFLICT(id)
+                        DO UPDATE SET
+                            enabled = excluded.enabled,
+                            name = excluded.name,
+                            discount_type =
+                                excluded.discount_type,
+                            discount_value =
+                                excluded.discount_value,
+                            limit_type =
+                                excluded.limit_type,
+                            start_at =
+                                excluded.start_at,
+                            end_at =
+                                excluded.end_at,
+                            max_uses =
+                                excluded.max_uses,
+                            updated_at =
+                                CURRENT_TIMESTAMP
+                    `)
+                    .bind(
+                        enabled ? 1 : 0,
+                        name ||
+                            "キャンペーン割引",
+                        discountType,
+                        discountValue,
+                        limitType,
+                        startAt,
+                        endAt,
+                        maxUses
+                    )
+                    .run();
+
+                const campaign =
+                    await getCampaignSettings(env);
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        campaign:
+                            buildAdminCampaignState(campaign)
+                    },
+                    200,
+                    corsHeaders
+                );
+            }
+
+
+            // 先着カウントをリセット
+            if (
+                request.method === "POST" &&
+                url.pathname ===
+                    "/api/admin/campaign/reset-usage"
+            ) {
+                await env.DB
+                    .prepare(`
+                        UPDATE campaign_settings
+                        SET
+                            used_count = 0,
+                            updated_at = CURRENT_TIMESTAMP
+                        WHERE id = 1
+                    `)
+                    .run();
+
+                const campaign =
+                    await getCampaignSettings(env);
+
+                return jsonResponse(
+                    {
+                        ok: true,
+                        campaign:
+                            buildAdminCampaignState(campaign)
                     },
                     200,
                     corsHeaders
@@ -1192,6 +1527,319 @@ async function getServiceSettings(env) {
     return defaults;
 }
 
+
+
+
+async function getCampaignSettings(env) {
+    const defaults = {
+        id: 1,
+        enabled: false,
+        name: "キャンペーン割引",
+        discountType: "percent",
+        discountValue: 10,
+        limitType: "period",
+        startAt: null,
+        endAt: null,
+        maxUses: null,
+        usedCount: 0,
+        updatedAt: ""
+    };
+
+    try {
+        const row =
+            await env.DB
+                .prepare(`
+                    SELECT
+                        id,
+                        enabled,
+                        name,
+                        discount_type,
+                        discount_value,
+                        limit_type,
+                        start_at,
+                        end_at,
+                        max_uses,
+                        used_count,
+                        updated_at
+                    FROM campaign_settings
+                    WHERE id = 1
+                    LIMIT 1
+                `)
+                .first();
+
+        if (!row) {
+            return defaults;
+        }
+
+        return {
+            id: 1,
+            enabled:
+                Boolean(row.enabled),
+            name:
+                clean(
+                    row.name ||
+                    defaults.name,
+                    80
+                ),
+            discountType:
+                row.discount_type === "amount"
+                    ? "amount"
+                    : "percent",
+            discountValue:
+                Number(
+                    row.discount_value ||
+                    defaults.discountValue
+                ),
+            limitType:
+                row.limit_type === "count"
+                    ? "count"
+                    : "period",
+            startAt:
+                row.start_at == null
+                    ? null
+                    : Number(row.start_at),
+            endAt:
+                row.end_at == null
+                    ? null
+                    : Number(row.end_at),
+            maxUses:
+                row.max_uses == null
+                    ? null
+                    : Number(row.max_uses),
+            usedCount:
+                Number(row.used_count || 0),
+            updatedAt:
+                String(row.updated_at || "")
+        };
+    } catch (error) {
+        console.warn(
+            "campaign_settings unavailable:",
+            error
+        );
+        return defaults;
+    }
+}
+
+
+function getCampaignStatus(
+    campaign,
+    now = Date.now()
+) {
+    if (!campaign?.enabled) {
+        return "disabled";
+    }
+
+    if (
+        campaign.limitType === "period"
+    ) {
+        if (
+            !Number.isFinite(campaign.startAt) ||
+            !Number.isFinite(campaign.endAt)
+        ) {
+            return "invalid";
+        }
+
+        if (now < campaign.startAt) {
+            return "upcoming";
+        }
+
+        if (now >= campaign.endAt) {
+            return "ended";
+        }
+
+        return "active";
+    }
+
+    const maxUses =
+        Number(campaign.maxUses || 0);
+
+    const usedCount =
+        Number(campaign.usedCount || 0);
+
+    if (
+        maxUses <= 0 ||
+        usedCount >= maxUses
+    ) {
+        return "ended";
+    }
+
+    return "active";
+}
+
+
+function buildAdminCampaignState(campaign) {
+    const status =
+        getCampaignStatus(campaign);
+
+    return {
+        ...campaign,
+        status,
+        active:
+            status === "active",
+        remaining:
+            campaign.limitType === "count"
+                ? Math.max(
+                      0,
+                      Number(campaign.maxUses || 0) -
+                      Number(campaign.usedCount || 0)
+                  )
+                : null
+    };
+}
+
+
+async function getPublicCampaign(env) {
+    const campaign =
+        await getCampaignSettings(env);
+
+    const state =
+        buildAdminCampaignState(campaign);
+
+    return {
+        active: state.active,
+        status: state.status,
+        name: state.name,
+        discountType:
+            state.discountType,
+        discountValue:
+            state.discountValue,
+        limitType:
+            state.limitType,
+        startAt: state.startAt,
+        endAt: state.endAt,
+        maxUses: state.maxUses,
+        remaining: state.remaining,
+        updatedAt: state.updatedAt
+    };
+}
+
+
+async function validateCampaignForRequest(
+    env,
+    estimate
+) {
+    const campaignData =
+        estimate?.discount?.campaign;
+
+    if (!campaignData?.applied) {
+        return {
+            ok: true,
+            applied: false,
+            requiresReservation: false
+        };
+    }
+
+    if (
+        estimate?.discount?.student ||
+        estimate?.discount?.first
+    ) {
+        return {
+            ok: false,
+            status: 400,
+            error:
+                "キャンペーン割引は学割・初回利用者割引と併用できません。"
+        };
+    }
+
+    const campaign =
+        await getCampaignSettings(env);
+
+    if (
+        getCampaignStatus(campaign) !==
+        "active"
+    ) {
+        return {
+            ok: false,
+            status: 409,
+            error:
+                "選択したキャンペーンは終了・開始前、または先着上限に達しています。ページを再読み込みしてください。"
+        };
+    }
+
+    if (
+        clean(
+            campaignData.discountType,
+            20
+        ) !== campaign.discountType ||
+        Number(
+            campaignData.discountValue
+        ) !== campaign.discountValue
+    ) {
+        return {
+            ok: false,
+            status: 409,
+            error:
+                "キャンペーン内容が更新されています。ページを再読み込みして見積りを確認してください。"
+        };
+    }
+
+    const beforeTotal =
+        Number(campaignData.beforeTotal);
+
+    const eligibleTotal =
+        Number(campaignData.eligibleTotal);
+
+    const sentDiscount =
+        Number(campaignData.discountAmount);
+
+    const sentTotal =
+        Number(estimate.finalTotal);
+
+    if (
+        !Number.isFinite(beforeTotal) ||
+        !Number.isFinite(eligibleTotal) ||
+        !Number.isFinite(sentDiscount) ||
+        beforeTotal < 0 ||
+        eligibleTotal < 0 ||
+        eligibleTotal > beforeTotal
+    ) {
+        return {
+            ok: false,
+            status: 400,
+            error:
+                "キャンペーン見積りの情報が正しくありません。"
+        };
+    }
+
+    const expectedDiscount =
+        campaign.discountType === "percent"
+            ? Math.floor(
+                  eligibleTotal *
+                  campaign.discountValue /
+                  100
+              )
+            : Math.min(
+                  eligibleTotal,
+                  campaign.discountValue
+              );
+
+    const expectedTotal =
+        Math.max(
+            0,
+            beforeTotal -
+            expectedDiscount
+        );
+
+    if (
+        sentDiscount !== expectedDiscount ||
+        Math.floor(sentTotal) !==
+            Math.floor(expectedTotal)
+    ) {
+        return {
+            ok: false,
+            status: 409,
+            error:
+                "キャンペーン適用後の見積り金額を確認できませんでした。ページを再読み込みしてください。"
+        };
+    }
+
+    return {
+        ok: true,
+        applied: true,
+        requiresReservation:
+            campaign.limitType === "count"
+    };
+}
 
 
 function getSetPlanSettings(settings) {

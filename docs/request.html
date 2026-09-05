@@ -4,8 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>なずな ご依頼フォーム</title>
-    <link rel="stylesheet" href="style.css?v=20">
-    <link rel="stylesheet" href="request.css?v=20">
+    <link rel="stylesheet" href="style.css?v=20.3">
+    <link rel="stylesheet" href="request.css?v=20.3">
 </head>
 <body class="request-page">
 
@@ -56,6 +56,15 @@
             <span class="desc">（学生証などの提示は不要です。イラストには適用されません。）</span>
             <label><input type="checkbox" id="chk_first"> 初回利用者 20%off</label><br>
             <span class="desc">（学割と同時適応で 60%off となります。）</span>
+            <div id="campaign_discount_area" class="campaign-discount-area" hidden>
+                <label class="campaign-discount-label">
+                    <input type="checkbox" id="chk_campaign">
+                    <strong id="campaign_discount_name">キャンペーン割引</strong>
+                    <span id="campaign_discount_badge" class="campaign-discount-badge"></span>
+                </label>
+                <span id="campaign_discount_detail" class="desc campaign-discount-detail"></span>
+                <span class="desc">（学割・初回利用者割引との併用はできません。）</span>
+            </div>
         </div>
 
 
@@ -477,10 +486,10 @@
     </div>
 </template>
 
-<script src="script.js?v=18.1"></script>
+<script src="script.js?v=20.3"></script>
 <script src="turnstile-config.js?v=1"></script>
 <script src="https://challenges.cloudflare.com/turnstile/v0/api.js?render=explicit" async defer></script>
-<script src="request.js?v=18"></script>
+<script src="request.js?v=20.3"></script>
 
 <footer class="site-footer">
     <a href="terms.html">依頼規約</a>

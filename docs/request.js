@@ -55,11 +55,41 @@ function restoreEstimateIntoEditor(estimate) {
     } else {
         // 旧バージョンから来た場合でも割引だけは引き継ぐ
         if (estimate.discount) {
-            const student = document.getElementById("chk_student");
-            const first = document.getElementById("chk_first");
+            const student =
+                document.getElementById(
+                    "chk_student"
+                );
 
-            if (student) student.checked = Boolean(estimate.discount.student);
-            if (first) first.checked = Boolean(estimate.discount.first);
+            const first =
+                document.getElementById(
+                    "chk_first"
+                );
+
+            const campaign =
+                document.getElementById(
+                    "chk_campaign"
+                );
+
+            if (student) {
+                student.checked =
+                    Boolean(
+                        estimate.discount.student
+                    );
+            }
+
+            if (first) {
+                first.checked =
+                    Boolean(
+                        estimate.discount.first
+                    );
+            }
+
+            if (
+                campaign &&
+                estimate.discount.campaign?.applied
+            ) {
+                campaign.checked = true;
+            }
         }
 
         if (estimate.tab === "set" && estimate.set?.planKey) {
@@ -745,9 +775,33 @@ function renderPreview(data) {
 }
 
 function getDiscountLabel(discount) {
-    if (!discount) return "なし";
+    if (!discount) {
+        return "なし";
+    }
 
-    if (discount.student && discount.first) {
+    const campaign =
+        discount.campaign;
+
+    if (campaign?.applied) {
+        const valueLabel =
+            campaign.discountType ===
+            "amount"
+                ? `${Number(
+                      campaign.discountValue || 0
+                  ).toLocaleString()}円OFF`
+                : `${Number(
+                      campaign.discountValue || 0
+                  ).toLocaleString()}%OFF`;
+
+        return `${campaign.name || "キャンペーン割引"}（${valueLabel} / -${Number(
+            campaign.discountAmount || 0
+        ).toLocaleString()}円）`;
+    }
+
+    if (
+        discount.student &&
+        discount.first
+    ) {
         return "学生料金 + 初回利用（合計60%OFF）";
     }
 

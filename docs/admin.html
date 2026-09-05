@@ -6,7 +6,7 @@
     <meta name="robots" content="noindex,nofollow">
     <title>なずな 依頼管理</title>
     <link rel="stylesheet" href="style.css?v=16">
-    <link rel="stylesheet" href="admin.css?v=3">
+    <link rel="stylesheet" href="admin.css?v=20.3">
 </head>
 <body class="admin-page">
 
@@ -74,6 +74,87 @@
             </div>
         </section>
 
+
+        <section class="admin-card">
+            <h2>キャンペーン割引</h2>
+            <span class="desc">
+                学割・初回利用者割引とは併用できない、期間限定または先着限定のキャンペーンを設定できます。
+            </span>
+
+            <div class="campaign-admin-status-row">
+                <span id="campaign_admin_status" class="campaign-admin-status">停止中</span>
+                <span id="campaign_admin_summary" class="desc"></span>
+            </div>
+
+            <div class="campaign-admin-grid">
+                <div class="admin-field">
+                    <label for="campaign_name"><strong>表示名</strong></label>
+                    <input type="text" id="campaign_name" maxlength="80" placeholder="例：オープン記念キャンペーン">
+                </div>
+
+                <div class="admin-field">
+                    <label for="campaign_discount_type"><strong>割引方式</strong></label>
+                    <select id="campaign_discount_type">
+                        <option value="percent">割引率（%）</option>
+                        <option value="amount">割引額（円）</option>
+                    </select>
+                </div>
+
+                <div class="admin-field">
+                    <label for="campaign_discount_value"><strong>割引率 / 割引額</strong></label>
+                    <input type="number" id="campaign_discount_value" min="1" step="1" value="10">
+                </div>
+
+                <div class="admin-field">
+                    <label for="campaign_limit_type"><strong>限定方法</strong></label>
+                    <select id="campaign_limit_type">
+                        <option value="period">期間限定</option>
+                        <option value="count">先着限定</option>
+                    </select>
+                </div>
+            </div>
+
+            <div id="campaign_period_fields" class="campaign-admin-grid">
+                <div class="admin-field">
+                    <label for="campaign_start_at"><strong>開始日時</strong></label>
+                    <input type="datetime-local" id="campaign_start_at">
+                </div>
+
+                <div class="admin-field">
+                    <label for="campaign_end_at"><strong>終了日時</strong></label>
+                    <input type="datetime-local" id="campaign_end_at">
+                </div>
+            </div>
+
+            <div id="campaign_count_fields" class="campaign-admin-grid" hidden>
+                <div class="admin-field">
+                    <label for="campaign_max_uses"><strong>先着人数</strong></label>
+                    <input type="number" id="campaign_max_uses" min="1" step="1" value="10">
+                </div>
+
+                <div class="campaign-usage-box">
+                    <strong>利用状況</strong>
+                    <span id="campaign_usage_text">0 / 0人</span>
+                    <button type="button" class="secondary-button" id="campaign_reset_usage">
+                        先着カウントを0に戻す
+                    </button>
+                </div>
+            </div>
+
+            <label class="campaign-enable-label">
+                <input type="checkbox" id="campaign_enabled">
+                キャンペーンを有効にする
+            </label>
+
+            <div id="campaign_admin_message" class="admin-message" hidden></div>
+
+            <div class="campaign-admin-actions">
+                <button type="button" class="btn-submit" id="campaign_save">
+                    キャンペーン設定を保存
+                </button>
+            </div>
+        </section>
+
         <section class="admin-card">
             <div class="admin-card-title-row">
                 <div>
@@ -126,6 +207,6 @@
     </section>
 </div>
 
-<script src="admin.js?v=4"></script>
+<script src="admin.js?v=20.3"></script>
 </body>
 </html>

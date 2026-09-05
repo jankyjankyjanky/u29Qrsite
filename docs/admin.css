@@ -521,3 +521,83 @@ body.admin-page {
 .contact-value {
     overflow-wrap: anywhere;
 }
+
+
+/* v20.3: キャンペーン管理 */
+.admin-message.success {
+    background: #E8F5E9;
+    color: #1B5E20;
+    border-left: 4px solid #43A047;
+}
+
+.campaign-admin-status-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 10px;
+    align-items: center;
+    margin: 14px 0;
+}
+
+.campaign-admin-status {
+    display: inline-block;
+    padding: 5px 10px;
+    border-radius: 16px;
+    font-weight: bold;
+    font-size: .82rem;
+    background: #EEEEEE;
+    color: #616161;
+}
+
+.campaign-admin-status.status-active {
+    background: #E8F5E9;
+    color: #1B5E20;
+}
+
+.campaign-admin-status.status-upcoming {
+    background: #E3F2FD;
+    color: #0D47A1;
+}
+
+.campaign-admin-status.status-ended {
+    background: #FFF3E0;
+    color: #E65100;
+}
+
+.campaign-admin-status.status-invalid {
+    background: #FFEBEE;
+    color: #B71C1C;
+}
+
+.campaign-admin-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 0 14px;
+}
+
+.campaign-usage-box {
+    align-self: center;
+    display: grid;
+    gap: 8px;
+    padding: 12px;
+    border: 1px solid #E0E0E0;
+    border-radius: 8px;
+    background: #FAFAFA;
+}
+
+.campaign-enable-label {
+    display: inline-flex;
+    gap: 7px;
+    align-items: center;
+    margin: 8px 0 14px;
+    font-weight: bold;
+}
+
+.campaign-admin-actions {
+    margin-top: 10px;
+}
+
+@media (max-width: 650px) {
+    .campaign-admin-grid {
+        grid-template-columns: 1fr;
+    }
+}

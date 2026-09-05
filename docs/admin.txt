@@ -38,6 +38,30 @@ function setupEvents() {
     document.getElementById("admin_logout").addEventListener("click", logout);
     document.getElementById("refresh_admin").addEventListener("click", refreshAll);
 
+    document.getElementById("campaign_limit_type")
+        ?.addEventListener(
+            "change",
+            updateCampaignLimitFields
+        );
+
+    document.getElementById("campaign_discount_type")
+        ?.addEventListener(
+            "change",
+            updateCampaignDiscountInput
+        );
+
+    document.getElementById("campaign_save")
+        ?.addEventListener(
+            "click",
+            saveCampaign
+        );
+
+    document.getElementById("campaign_reset_usage")
+        ?.addEventListener(
+            "click",
+            resetCampaignUsage
+        );
+
     document.getElementById("request_filter").addEventListener("change", renderRequestList);
 
     document.getElementById("request_search").addEventListener("input", renderRequestList);
@@ -103,6 +127,7 @@ async function refreshAll() {
     try {
         await Promise.all([
             loadSettings(),
+            loadCampaign(),
             loadRequests()
         ]);
 
@@ -169,6 +194,418 @@ function renderSettings(settings) {
         wrap.appendChild(box);
     });
 }
+
+
+let currentCampaign = null;
+
+async function loadCampaign() {
+    const data =
+        await adminFetch(
+            "/api/admin/campaign"
+        );
+
+    currentCampaign =
+        data.campaign || null;
+
+    renderCampaign(
+        currentCampaign
+    );
+}
+
+
+function renderCampaign(campaign) {
+    if (!campaign) {
+        return;
+    }
+
+    setCampaignValue(
+        "campaign_name",
+        campaign.name ||
+        "キャンペーン割引"
+    );
+
+    setCampaignValue(
+        "campaign_discount_type",
+        campaign.discountType ||
+        "percent"
+    );
+
+    setCampaignValue(
+        "campaign_discount_value",
+        campaign.discountValue || 10
+    );
+
+    setCampaignValue(
+        "campaign_limit_type",
+        campaign.limitType ||
+        "period"
+    );
+
+    setCampaignValue(
+        "campaign_max_uses",
+        campaign.maxUses || 10
+    );
+
+    const enabled =
+        document.getElementById(
+            "campaign_enabled"
+        );
+
+    if (enabled) {
+        enabled.checked =
+            Boolean(campaign.enabled);
+    }
+
+    const start =
+        document.getElementById(
+            "campaign_start_at"
+        );
+
+    const end =
+        document.getElementById(
+            "campaign_end_at"
+        );
+
+    if (start) {
+        start.value =
+            toDateTimeLocal(
+                campaign.startAt
+            );
+    }
+
+    if (end) {
+        end.value =
+            toDateTimeLocal(
+                campaign.endAt
+            );
+    }
+
+    const usage =
+        document.getElementById(
+            "campaign_usage_text"
+        );
+
+    if (usage) {
+        usage.textContent =
+            `${Number(
+                campaign.usedCount || 0
+            ).toLocaleString()} / ${Number(
+                campaign.maxUses || 0
+            ).toLocaleString()}人`;
+    }
+
+    const status =
+        document.getElementById(
+            "campaign_admin_status"
+        );
+
+    if (status) {
+        const labels = {
+            active: "開催中",
+            upcoming: "開始前",
+            ended: "終了",
+            disabled: "停止中",
+            invalid: "設定不備"
+        };
+
+        status.textContent =
+            labels[campaign.status] ||
+            campaign.status ||
+            "停止中";
+
+        status.className =
+            `campaign-admin-status status-${campaign.status || "disabled"}`;
+    }
+
+    const summary =
+        document.getElementById(
+            "campaign_admin_summary"
+        );
+
+    if (summary) {
+        const discount =
+            campaign.discountType ===
+            "amount"
+                ? `${Number(
+                      campaign.discountValue || 0
+                  ).toLocaleString()}円OFF`
+                : `${Number(
+                      campaign.discountValue || 0
+                  ).toLocaleString()}%OFF`;
+
+        const limit =
+            campaign.limitType ===
+            "count"
+                ? `先着 ${Number(
+                      campaign.maxUses || 0
+                  ).toLocaleString()}名 / 残り ${Number(
+                      campaign.remaining || 0
+                  ).toLocaleString()}名`
+                : `${formatCampaignTimestamp(
+                      campaign.startAt
+                  )} ～ ${formatCampaignTimestamp(
+                      campaign.endAt
+                  )}`;
+
+        summary.textContent =
+            `${campaign.name || "キャンペーン割引"} / ${discount} / ${limit}`;
+    }
+
+    updateCampaignLimitFields();
+    updateCampaignDiscountInput();
+}
+
+
+function setCampaignValue(id, value) {
+    const element =
+        document.getElementById(id);
+
+    if (element) {
+        element.value = value ?? "";
+    }
+}
+
+
+function updateCampaignLimitFields() {
+    const type =
+        document.getElementById(
+            "campaign_limit_type"
+        )?.value;
+
+    const period =
+        document.getElementById(
+            "campaign_period_fields"
+        );
+
+    const count =
+        document.getElementById(
+            "campaign_count_fields"
+        );
+
+    if (period) {
+        period.hidden =
+            type !== "period";
+    }
+
+    if (count) {
+        count.hidden =
+            type !== "count";
+    }
+}
+
+
+function updateCampaignDiscountInput() {
+    const type =
+        document.getElementById(
+            "campaign_discount_type"
+        )?.value;
+
+    const input =
+        document.getElementById(
+            "campaign_discount_value"
+        );
+
+    if (!input) return;
+
+    if (type === "percent") {
+        input.max = "100";
+        input.placeholder = "例：20";
+    } else {
+        input.max = "1000000";
+        input.placeholder = "例：500";
+    }
+}
+
+
+async function saveCampaign() {
+    const button =
+        document.getElementById(
+            "campaign_save"
+        );
+
+    const message =
+        document.getElementById(
+            "campaign_admin_message"
+        );
+
+    const limitType =
+        document.getElementById(
+            "campaign_limit_type"
+        ).value;
+
+    const startRaw =
+        document.getElementById(
+            "campaign_start_at"
+        ).value;
+
+    const endRaw =
+        document.getElementById(
+            "campaign_end_at"
+        ).value;
+
+    const body = {
+        enabled:
+            document.getElementById(
+                "campaign_enabled"
+            ).checked,
+
+        name:
+            document.getElementById(
+                "campaign_name"
+            ).value.trim() ||
+            "キャンペーン割引",
+
+        discountType:
+            document.getElementById(
+                "campaign_discount_type"
+            ).value,
+
+        discountValue:
+            Number(
+                document.getElementById(
+                    "campaign_discount_value"
+                ).value
+            ),
+
+        limitType,
+
+        startAt:
+            limitType === "period" &&
+            startRaw
+                ? new Date(startRaw).getTime()
+                : null,
+
+        endAt:
+            limitType === "period" &&
+            endRaw
+                ? new Date(endRaw).getTime()
+                : null,
+
+        maxUses:
+            limitType === "count"
+                ? Number(
+                      document.getElementById(
+                          "campaign_max_uses"
+                      ).value
+                  )
+                : null
+    };
+
+    button.disabled = true;
+
+    if (message) {
+        message.hidden = true;
+    }
+
+    try {
+        const data =
+            await adminFetch(
+                "/api/admin/campaign",
+                {
+                    method: "PUT",
+                    body:
+                        JSON.stringify(body)
+                }
+            );
+
+        currentCampaign =
+            data.campaign;
+
+        renderCampaign(
+            currentCampaign
+        );
+
+        if (message) {
+            message.hidden = false;
+            message.className =
+                "admin-message success";
+            message.textContent =
+                "キャンペーン設定を保存しました。";
+        }
+    } catch (error) {
+        if (message) {
+            message.hidden = false;
+            message.className =
+                "admin-message error";
+            message.textContent =
+                error.message;
+        }
+    } finally {
+        button.disabled = false;
+    }
+}
+
+
+async function resetCampaignUsage() {
+    if (
+        !window.confirm(
+            "先着キャンペーンの利用人数を0人に戻しますか？"
+        )
+    ) {
+        return;
+    }
+
+    const data =
+        await adminFetch(
+            "/api/admin/campaign/reset-usage",
+            {
+                method: "POST",
+                body:
+                    JSON.stringify({})
+            }
+        );
+
+    currentCampaign =
+        data.campaign;
+
+    renderCampaign(
+        currentCampaign
+    );
+}
+
+
+function toDateTimeLocal(value) {
+    const timestamp =
+        Number(value);
+
+    if (
+        !Number.isFinite(timestamp) ||
+        timestamp <= 0
+    ) {
+        return "";
+    }
+
+    const date =
+        new Date(timestamp);
+
+    const local =
+        new Date(
+            date.getTime() -
+            date.getTimezoneOffset() *
+            60000
+        );
+
+    return local
+        .toISOString()
+        .slice(0, 16);
+}
+
+
+function formatCampaignTimestamp(value) {
+    const timestamp =
+        Number(value);
+
+    if (
+        !Number.isFinite(timestamp) ||
+        timestamp <= 0
+    ) {
+        return "未設定";
+    }
+
+    return new Date(timestamp)
+        .toLocaleString("ja-JP");
+}
+
 
 async function loadRequests() {
     const data = await adminFetch("/api/admin/requests?limit=100");
@@ -378,6 +815,25 @@ function renderDetail(item) {
 
                 <dt>見積り金額</dt>
                 <dd><strong>${Number(item.estimate_total || 0).toLocaleString()}円</strong></dd>
+
+                ${
+                    estimate.discount?.campaign?.applied
+                        ? `
+                            <dt>キャンペーン</dt>
+                            <dd>
+                                ${escapeHtml(
+                                    estimate.discount.campaign.name ||
+                                    "キャンペーン割引"
+                                )}
+                                /
+                                -${Number(
+                                    estimate.discount.campaign.discountAmount ||
+                                    0
+                                ).toLocaleString()}円
+                            </dd>
+                        `
+                        : ""
+                }
 
                 <dt>受付日時</dt>
                 <dd>${formatDateTime(item.created_at)}</dd>
