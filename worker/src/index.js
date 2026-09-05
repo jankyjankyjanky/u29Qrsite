@@ -1,5 +1,5 @@
 const ALLOWED_ORIGINS = [
-    "https://jankyjankyjanky.github.io"
+    "https://nazunazuna.github.io"
 ];
 
 const SERVICE_KEYS = [
@@ -28,13 +28,13 @@ const REQUEST_STATUSES = [
 ];
 
 const TURNSTILE_EXPECTED_HOSTNAME =
-    "jankyjankyjanky.github.io";
+    "nazunazuna.github.io";
 
 const TURNSTILE_EXPECTED_ACTION =
     "submit_request";
 
 const ADMIN_PAGE_URL =
-    "https://jankyjankyjanky.github.io/nazuna-request-site/admin.html";
+    "https://nazunazuna.github.io/nazuna-request-site/admin.html";
 
 export default {
     async fetch(request, env) {
